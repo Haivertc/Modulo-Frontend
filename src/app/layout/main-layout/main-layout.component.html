@@ -1,0 +1,30 @@
+<a class="skip-link" href="#contenido" (click)="saltarAlContenido($event)">Saltar al contenido</a>
+
+<header class="topbar">
+  <div class="topbar__inner">
+    <a class="topbar__brand" routerLink="/estudiantes">Gestión académica</a>
+
+    <nav class="topbar__nav" aria-label="Principal">
+      <ul role="list">
+        @for (seccion of secciones; track seccion.path) {
+          <li>
+            <a
+              [routerLink]="seccion.path"
+              routerLinkActive="is-active"
+              ariaCurrentWhenActive="page"
+            >{{ seccion.label }}</a>
+          </li>
+        }
+      </ul>
+    </nav>
+
+    <button type="button" class="button button--secondary topbar__logout" (click)="logout()">Cerrar sesión</button>
+  </div>
+</header>
+
+<main id="contenido" #main tabindex="-1">
+  <router-outlet />
+</main>
+
+<app-toast-container />
+<app-confirm-dialog />
