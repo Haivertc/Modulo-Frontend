@@ -1,0 +1,75 @@
+import { HttpClient } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { Observable, map } from 'rxjs';
+
+import {
+  Estudiante,
+  EstudianteDetalle,
+  EstudiantePayload,
+  EstudiantesFiltros,
+  EstudiantesPageResponse,
+  PaginatedResponse,
+  Programa,
+  SortDirection,
+} from '../../models';
+import { APP_CONFIG } from '../config/app-config';
+import { toHttpParams } from '../http/query-params';
+
+@Injectable({ providedIn: 'root' })
+export class EstudiantesService {
+  private readonly http = inject(HttpClient);
+  private readonly baseUrl = `${inject(APP_CONFIG).apiBaseUrl}/estudiantes`;
+
+  /** Listado paginado. `pageNumber` es base 1, igual que en el módulo Estudiantes. */
+  getEstudiantes(
+    pageNumber: number,
+    pageSize: number,
+    sortBy?: string,
+    sortDirection?: SortDirection,
+    filtros: EstudiantesFiltros = {},
+  ): Observable<PaginatedResponse<Estudiante>> {
+    const params = toHttpParams({ pageNumber, pageSize, sortBy, sortDirection, ...filtros });
+
+    return this.http.get<EstudiantesPageResponse>(this.baseUrl, { params }).pipe(
+      map((response) => ({
+        items: response.data,
+        totalElements: response.totalRecords,
+        pageNumber: response.pageNumber,
+        pageSize: response.pageSize,
+        totalPages: response.totalPages,
+      })),
+    );
+  }
+
+  getEstudiante(id: string): Observable<Estudiante> {
+    return this.http.get<Estudiante>(this.url(id));
+  }
+
+  /** La respuesta trae `programa` como ID (sin populate), así que no se expone. */
+  createEstudiante(payload: EstudiantePayload): Observable<void> {
+    return this.http.post(this.baseUrl, payload).pipe(map(() => undefined));
+  }
+
+  updateEstudiante(id: string, payload: EstudiantePayload): Observable<void> {
+    return this.http.put(this.url(id), payload).pipe(map(() => undefined));
+  }
+
+  /** El módulo no elimina en cascada: las inscripciones del estudiante se conservan. */
+  deleteEstudiante(id: string): Observable<void> {
+    return this.http.delete<void>(this.url(id));
+  }
+
+  /** Programas académicos (sub-recurso del módulo Estudiantes). */
+  getProgramas(): Observable<Programa[]> {
+    return this.http.get<Programa[]>(`${this.baseUrl}/programas`);
+  }
+
+  /** Composición BFF del Gateway: estudiante con sus inscripciones, cursos, docentes y notas. */
+  getDetalle(id: string): Observable<EstudianteDetalle> {
+    return this.http.get<EstudianteDetalle>(`${this.url(id)}/detalle`);
+  }
+
+  private url(id: string): string {
+    return `${this.baseUrl}/${encodeURIComponent(id)}`;
+  }
+}
