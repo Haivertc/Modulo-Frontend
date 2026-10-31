@@ -1,0 +1,20 @@
+# Dependencias y compilaciones locales: se generan dentro de la imagen
+node_modules
+dist
+.angular
+out-tsc
+
+# Variables de entorno, logs y configuraciones locales
+.env
+.env.*
+*.log
+.vscode
+.idea
+.impeccable
+
+# Archivos que no necesita la imagen
+.git
+.gitignore
+*.md
+Dockerfile
+.dockerignore
