@@ -1,0 +1,158 @@
+// Listados: panel de filtros y tabla de datos compartidos por Estudiantes, Materias e Inscripciones.
+
+.filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  align-items: end;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+}
+
+.list-status {
+  display: block;
+  margin-bottom: var(--space-4);
+}
+
+.list-empty p {
+  color: var(--color-ink-muted);
+}
+
+.table-wrap {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  transition: opacity var(--duration-base) var(--ease-out);
+
+  &.is-busy {
+    opacity: 0.55;
+  }
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: var(--space-3) var(--space-4);
+    text-align: left;
+    vertical-align: top;
+  }
+
+  th {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--color-ink-muted);
+    vertical-align: middle;
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  tbody tr + tr {
+    border-top: 1px solid var(--color-line);
+  }
+}
+
+.table__wrap-anywhere {
+  overflow-wrap: anywhere;
+}
+
+.table__number {
+  text-align: right;
+}
+
+.table__photo {
+  width: 1%;
+}
+
+// Foto del estudiante (URL firmada de S3) o sus iniciales si no tiene
+.avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  object-fit: cover;
+  vertical-align: middle;
+}
+
+.avatar--vacio {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-ink-muted);
+  background: var(--color-background);
+  border: 1px solid var(--color-line);
+}
+
+.table__action {
+  text-align: right;
+  white-space: nowrap;
+
+  a {
+    font-weight: 600;
+    color: var(--color-ink);
+  }
+
+  > * + * {
+    margin-left: var(--space-4);
+  }
+}
+
+// En pantallas angostas cada fila pasa a ser un bloque con etiquetas; los botones de orden quedan arriba.
+@media (max-width: 47.99rem) {
+  .table,
+  .table thead,
+  .table tbody,
+  .table td {
+    display: block;
+  }
+
+  .table thead tr {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-4);
+    padding: var(--space-2) var(--space-4);
+    border-bottom: 1px solid var(--color-line);
+
+    th {
+      padding: 0;
+      border: 0;
+    }
+
+    .is-static {
+      display: none;
+    }
+  }
+
+  .table tbody tr {
+    display: block;
+    padding: var(--space-3) var(--space-4);
+
+    td {
+      display: grid;
+      grid-template-columns: 7rem 1fr;
+      gap: var(--space-2);
+      padding: var(--space-1) 0;
+      text-align: left;
+      border: 0;
+
+      &::before {
+        content: attr(data-label);
+        font-size: var(--text-sm);
+        color: var(--color-ink-muted);
+      }
+    }
+
+    .table__action {
+      display: block;
+      padding-top: var(--space-2);
+
+      &::before {
+        content: none;
+      }
+    }
+  }
+}

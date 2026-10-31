@@ -1,0 +1,51 @@
+// Tokens base del sistema visual. Los componentes usan estas variables, nunca hex directos.
+// Paleta provisional: se ajustará cuando se defina el diseño de las pantallas.
+
+:root {
+  // Color
+  --color-ink: #1f2a37;
+  --color-ink-muted: #4b5866;
+  --color-surface: #ffffff;
+  --color-background: #f5f7f8;
+  --color-line: #d5dce1;
+  --color-focus: #2563a8;
+
+  // Estado académico (escala 0–5, aprobación en 3.0). Acompañar siempre con texto.
+  --color-grade-pass: #2f7d5b;
+  --color-grade-risk: #b7791f;
+  --color-grade-fail: #b42318;
+
+  // Tipografía (las fuentes web aún no se cargan; se usan los respaldos del sistema)
+  --font-display: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --font-body: 'Source Sans 3', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2rem;
+  --leading-body: 1.5;
+  --leading-tight: 1.2;
+
+  // Espaciado (ritmo de 4px)
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+
+  // Forma y capas
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --z-header: 10;
+  --z-overlay: 100;
+  --z-toast: 1000;
+
+  // Movimiento
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+
+  --measure: 72ch;
+}
