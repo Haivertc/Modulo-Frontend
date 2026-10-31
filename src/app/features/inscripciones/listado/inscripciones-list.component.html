@@ -1,0 +1,98 @@
+<div class="page">
+  <div class="page__header">
+    <h1 class="page__title">Inscripciones</h1>
+    <a class="button" routerLink="/inscripciones/nuevo">Nueva inscripción</a>
+  </div>
+
+  <form class="filters" [formGroup]="filtros" role="search" aria-label="Filtrar inscripciones" (ngSubmit)="$event.preventDefault()">
+    <div class="field">
+      <label for="f-periodo">Periodo, por ejemplo 2026-2</label>
+      <input id="f-periodo" type="search" formControlName="periodo" autocomplete="off" />
+    </div>
+    <div class="field">
+      <label for="f-estudiante">ID de estudiante</label>
+      <input id="f-estudiante" type="search" formControlName="estudianteId" autocomplete="off" spellcheck="false" />
+    </div>
+    <div class="field">
+      <label for="f-curso">ID de curso</label>
+      <input id="f-curso" type="search" formControlName="cursoId" inputmode="numeric" autocomplete="off" />
+    </div>
+    <button type="button" class="button button--secondary" [disabled]="!hayFiltros()" (click)="filtros.reset()">
+      Limpiar filtros
+    </button>
+  </form>
+
+  @if (list.loading()) {
+    <app-loading-state class="list-status" message="Cargando inscripciones…" />
+  }
+
+  @if (list.error(); as err) {
+    <app-error-state [error]="err" (retry)="list.reload()" />
+  } @else if (list.page(); as p) {
+    @if (p.items.length === 0) {
+      <div class="list-empty">
+        @if (hayFiltros()) {
+          <p>Ninguna inscripción coincide con los filtros. Los tres filtros buscan el valor exacto.</p>
+        } @else if (p.totalElements === 0) {
+          <p>Aún no hay inscripciones registradas.</p>
+        } @else {
+          <p>Esta página no tiene inscripciones.</p>
+          <button type="button" class="button" (click)="list.goTo(1)">Ir a la primera página</button>
+        }
+      </div>
+    } @else {
+      <div class="table-wrap" [class.is-busy]="list.loading()" [attr.aria-busy]="list.loading()">
+        <table class="table">
+          <caption class="visually-hidden">Inscripciones, página {{ p.pageNumber }} de {{ p.totalPages }}</caption>
+          <thead>
+            <tr>
+              <th appSortHeader [direction]="list.direction('periodo')" (sort)="list.sort('periodo')">Periodo</th>
+              <th appSortHeader [direction]="list.direction('estado')" (sort)="list.sort('estado')">Estado</th>
+              <th appSortHeader [direction]="list.direction('estudianteId')" (sort)="list.sort('estudianteId')">Estudiante</th>
+              <th appSortHeader [direction]="list.direction('cursoId')" (sort)="list.sort('cursoId')">Curso</th>
+              <th scope="col" class="is-static">Notas</th>
+              <th scope="col" class="is-static"><span class="visually-hidden">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (i of p.items; track i._id) {
+              <tr>
+                <td data-label="Periodo">{{ i.periodo }}</td>
+                <td data-label="Estado">{{ i.estado }}</td>
+                <td data-label="Estudiante" class="table__wrap-anywhere">
+                  <a [routerLink]="['/estudiantes', i.estudianteId]">{{ i.estudianteId }}</a>
+                </td>
+                <td data-label="Curso">{{ i.cursoId }}</td>
+                <td data-label="Notas">
+                  @for (nota of i.notas; track $index) {
+                    {{ nota.tipo }} {{ nota.valor | number: '1.1-1' }}@if (!$last) {<br />}
+                  } @empty {
+                    Sin notas
+                  }
+                </td>
+                <td class="table__action">
+                  <a [routerLink]="['/inscripciones', i._id, 'editar']">
+                    Editar<span class="visually-hidden"> inscripción del periodo {{ i.periodo }} al curso {{ i.cursoId }}</span>
+                  </a>
+                  <button type="button" class="link-button link-button--danger"
+                    [disabled]="deletion.deleting() === i._id" (click)="eliminar(i)">
+                    Eliminar<span class="visually-hidden"> inscripción del periodo {{ i.periodo }} al curso {{ i.cursoId }}</span>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <app-pagination
+        label="Paginación de inscripciones"
+        [page]="p"
+        [pageSize]="list.query().pageSize"
+        [busy]="list.loading()"
+        (pageChange)="list.goTo($event)"
+        (pageSizeChange)="list.setPageSize($event)"
+      />
+    }
+  }
+</div>

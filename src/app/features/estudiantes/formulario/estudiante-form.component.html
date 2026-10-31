@@ -1,0 +1,86 @@
+<div class="page">
+  <a class="back-link" routerLink="/estudiantes">Volver al listado de estudiantes</a>
+  <h1 class="page__title">{{ entity.editing() ? 'Editar estudiante' : 'Nuevo estudiante' }}</h1>
+
+  @if (entity.loading()) {
+    <app-loading-state message="Cargando los datos del estudiante…" />
+  } @else if (entity.loadError(); as err) {
+    <app-error-state [error]="err" (retry)="entity.reload()" />
+  } @else {
+    <form class="form-panel" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      @if (entity.saveError(); as err) {
+        <app-error-state class="form-error" tabindex="-1" [error]="err" [retryable]="false" />
+      }
+
+      <div class="form-grid">
+        <div class="field">
+          <label for="nombre">Nombre</label>
+          <input id="nombre" formControlName="nombre" autocomplete="given-name"
+            [attr.aria-invalid]="!!error('nombre')" [attr.aria-describedby]="error('nombre') ? 'nombre-error' : null" />
+          @if (error('nombre'); as msg) { <p id="nombre-error" class="field__error">{{ msg }}</p> }
+        </div>
+        <div class="field">
+          <label for="apellido">Apellido</label>
+          <input id="apellido" formControlName="apellido" autocomplete="family-name"
+            [attr.aria-invalid]="!!error('apellido')" [attr.aria-describedby]="error('apellido') ? 'apellido-error' : null" />
+          @if (error('apellido'); as msg) { <p id="apellido-error" class="field__error">{{ msg }}</p> }
+        </div>
+        <div class="field">
+          <label for="correo">Correo</label>
+          <input id="correo" type="email" formControlName="correo" autocomplete="email" spellcheck="false"
+            [attr.aria-invalid]="!!error('correo')" [attr.aria-describedby]="error('correo') ? 'correo-error' : null" />
+          @if (error('correo'); as msg) { <p id="correo-error" class="field__error">{{ msg }}</p> }
+        </div>
+        <div class="field">
+          <label for="fecha_nacimiento">Fecha de nacimiento</label>
+          <input id="fecha_nacimiento" type="date" formControlName="fecha_nacimiento" autocomplete="bday"
+            [attr.aria-invalid]="!!error('fecha_nacimiento')"
+            [attr.aria-describedby]="error('fecha_nacimiento') ? 'fecha-error' : null" />
+          @if (error('fecha_nacimiento'); as msg) { <p id="fecha-error" class="field__error">{{ msg }}</p> }
+        </div>
+        <div class="field field--wide">
+          <label for="programa">Programa</label>
+          <select id="programa" formControlName="programa"
+            [attr.aria-invalid]="!!error('programa')" [attr.aria-describedby]="error('programa') ? 'programa-error' : null">
+            <option value="">Elige un programa</option>
+            @for (programa of programas(); track programa._id) {
+              <option [value]="programa._id">{{ programa.nombre }} ({{ programa.codigo }})</option>
+            }
+          </select>
+          @if (error('programa'); as msg) { <p id="programa-error" class="field__error">{{ msg }}</p> }
+        </div>
+      </div>
+
+      <fieldset class="form-fieldset" formGroupName="contacto">
+        <legend>Contacto</legend>
+        <div class="form-grid">
+          <div class="field">
+            <label for="telefono">Teléfono</label>
+            <input id="telefono" type="tel" formControlName="telefono" autocomplete="tel" inputmode="tel"
+              [attr.aria-invalid]="!!error('telefono')" [attr.aria-describedby]="error('telefono') ? 'telefono-error' : null" />
+            @if (error('telefono'); as msg) { <p id="telefono-error" class="field__error">{{ msg }}</p> }
+          </div>
+          <div class="field">
+            <label for="ciudad">Ciudad</label>
+            <input id="ciudad" formControlName="ciudad" autocomplete="address-level2"
+              [attr.aria-invalid]="!!error('ciudad')" [attr.aria-describedby]="error('ciudad') ? 'ciudad-error' : null" />
+            @if (error('ciudad'); as msg) { <p id="ciudad-error" class="field__error">{{ msg }}</p> }
+          </div>
+          <div class="field field--wide">
+            <label for="direccion">Dirección</label>
+            <input id="direccion" formControlName="direccion" autocomplete="street-address"
+              [attr.aria-invalid]="!!error('direccion')" [attr.aria-describedby]="error('direccion') ? 'direccion-error' : null" />
+            @if (error('direccion'); as msg) { <p id="direccion-error" class="field__error">{{ msg }}</p> }
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="form-actions">
+        <button type="submit" class="button" [disabled]="entity.saving()">
+          {{ entity.saving() ? 'Guardando…' : entity.editing() ? 'Guardar cambios' : 'Crear estudiante' }}
+        </button>
+        <a class="button button--secondary" routerLink="/estudiantes">Cancelar</a>
+      </div>
+    </form>
+  }
+</div>

@@ -1,0 +1,61 @@
+<div class="page">
+  <a class="back-link" routerLink="/inscripciones">Volver al listado de inscripciones</a>
+  <h1 class="page__title">{{ entity.editing() ? 'Editar inscripción' : 'Nueva inscripción' }}</h1>
+
+  @if (entity.loading()) {
+    <app-loading-state message="Cargando los datos de la inscripción…" />
+  } @else if (entity.loadError(); as err) {
+    <app-error-state [error]="err" (retry)="entity.reload()" />
+  } @else {
+    <form class="form-panel" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      @if (entity.saveError(); as err) {
+        <app-error-state class="form-error" tabindex="-1" [error]="err" [retryable]="false" />
+      }
+
+      <div class="form-grid">
+        <div class="field field--wide">
+          <label for="estudianteId">ID de estudiante</label>
+          <input id="estudianteId" formControlName="estudianteId" spellcheck="false" autocomplete="off"
+            [attr.aria-invalid]="!!error('estudianteId')"
+            [attr.aria-describedby]="error('estudianteId') ? 'estudiante-error' : null" />
+          @if (error('estudianteId'); as msg) { <p id="estudiante-error" class="field__error">{{ msg }}</p> }
+        </div>
+        <div class="field">
+          <label for="cursoId">ID de curso</label>
+          <input id="cursoId" type="text" inputmode="numeric" formControlName="cursoId" autocomplete="off"
+            [attr.aria-invalid]="!!error('cursoId')" [attr.aria-describedby]="error('cursoId') ? 'curso-error' : null" />
+          @if (error('cursoId'); as msg) { <p id="curso-error" class="field__error">{{ msg }}</p> }
+        </div>
+        <div class="field">
+          <label for="periodo">Periodo, por ejemplo 2026-2</label>
+          <input id="periodo" formControlName="periodo" autocomplete="off"
+            [attr.aria-invalid]="!!error('periodo')" [attr.aria-describedby]="error('periodo') ? 'periodo-error' : null" />
+          @if (error('periodo'); as msg) { <p id="periodo-error" class="field__error">{{ msg }}</p> }
+        </div>
+        @if (entity.editing()) {
+          <div class="field">
+            <label for="estado">Estado</label>
+            <input id="estado" formControlName="estado" list="estados-sugeridos" autocomplete="off"
+              [attr.aria-invalid]="!!error('estado')" [attr.aria-describedby]="error('estado') ? 'estado-error' : null" />
+            <datalist id="estados-sugeridos">
+              <option value="activa"></option>
+              <option value="cancelada"></option>
+            </datalist>
+            @if (error('estado'); as msg) { <p id="estado-error" class="field__error">{{ msg }}</p> }
+          </div>
+        }
+      </div>
+
+      @if (!entity.editing()) {
+        <p class="field__optional">La inscripción se crea con estado «activa»; podrás cambiarlo al editarla.</p>
+      }
+
+      <div class="form-actions">
+        <button type="submit" class="button" [disabled]="entity.saving()">
+          {{ entity.saving() ? 'Guardando…' : entity.editing() ? 'Guardar cambios' : 'Crear inscripción' }}
+        </button>
+        <a class="button button--secondary" routerLink="/inscripciones">Cancelar</a>
+      </div>
+    </form>
+  }
+</div>

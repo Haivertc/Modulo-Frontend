@@ -1,0 +1,111 @@
+<div class="page">
+  <div class="page__header">
+    <h1 class="page__title">Estudiantes</h1>
+    <a class="button" routerLink="/estudiantes/nuevo">Nuevo estudiante</a>
+  </div>
+
+  <form class="filters" [formGroup]="filtros" role="search" aria-label="Filtrar estudiantes" (ngSubmit)="$event.preventDefault()">
+    <div class="field">
+      <label for="f-search">Nombre, apellido o correo</label>
+      <input id="f-search" type="search" formControlName="search" autocomplete="off" />
+    </div>
+    <div class="field">
+      <label for="f-programa">Programa</label>
+      <select id="f-programa" formControlName="programa">
+        <option value="">Todos</option>
+        @for (programa of programas(); track programa._id) {
+          <option [value]="programa._id">{{ programa.nombre }}</option>
+        }
+      </select>
+    </div>
+    <div class="field">
+      <label for="f-ciudad">Ciudad</label>
+      <input id="f-ciudad" type="search" formControlName="ciudad" autocomplete="off" />
+    </div>
+    <button type="button" class="button button--secondary" [disabled]="!hayFiltros()" (click)="filtros.reset()">
+      Limpiar filtros
+    </button>
+  </form>
+
+  @if (list.loading()) {
+    <app-loading-state class="list-status" message="Cargando estudiantes…" />
+  }
+
+  @if (list.error(); as err) {
+    <app-error-state [error]="err" (retry)="list.reload()" />
+  } @else if (list.page(); as p) {
+    @if (p.items.length === 0) {
+      <div class="list-empty">
+        @if (hayFiltros()) {
+          <p>Ningún estudiante coincide con los filtros. Prueba con otros valores o limpia los filtros.</p>
+        } @else if (p.totalElements === 0) {
+          <p>Aún no hay estudiantes registrados.</p>
+        } @else {
+          <p>Esta página no tiene estudiantes.</p>
+          <button type="button" class="button" (click)="list.goTo(1)">Ir a la primera página</button>
+        }
+      </div>
+    } @else {
+      <div class="table-wrap" [class.is-busy]="list.loading()" [attr.aria-busy]="list.loading()">
+        <table class="table">
+          <caption class="visually-hidden">Estudiantes, página {{ p.pageNumber }} de {{ p.totalPages }}</caption>
+          <thead>
+            <tr>
+              <th scope="col" class="is-static">Foto</th>
+              <th appSortHeader [direction]="list.direction('nombre')" (sort)="list.sort('nombre')">Nombre</th>
+              <th appSortHeader [direction]="list.direction('apellido')" (sort)="list.sort('apellido')">Apellido</th>
+              <th appSortHeader [direction]="list.direction('correo')" (sort)="list.sort('correo')">Correo</th>
+              <th scope="col" class="is-static">Programa</th>
+              <th appSortHeader [direction]="list.direction('contacto.ciudad')" (sort)="list.sort('contacto.ciudad')">Ciudad</th>
+              <th scope="col" class="is-static"><span class="visually-hidden">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (e of p.items; track e._id) {
+              <tr>
+                <td data-label="Foto" class="table__photo">
+                  @if (e.fotografia?.url && !fotosFallidas().has(e._id)) {
+                    <img
+                      class="avatar"
+                      [src]="e.fotografia!.url"
+                      [alt]="'Fotografía de ' + e.nombre + ' ' + e.apellido"
+                      width="40"
+                      height="40"
+                      loading="lazy"
+                      (error)="marcarFotoFallida(e._id)"
+                    />
+                  } @else {
+                    <span class="avatar avatar--vacio" aria-hidden="true">{{ iniciales(e) }}</span>
+                    <span class="visually-hidden">Sin fotografía</span>
+                  }
+                </td>
+                <td data-label="Nombre">{{ e.nombre }}</td>
+                <td data-label="Apellido">{{ e.apellido }}</td>
+                <td data-label="Correo" class="table__wrap-anywhere">{{ e.correo }}</td>
+                <td data-label="Programa">{{ e.programa.nombre }}</td>
+                <td data-label="Ciudad">{{ e.contacto.ciudad }}</td>
+                <td class="table__action">
+                  <a [routerLink]="['/estudiantes', e._id]">
+                    Ver detalle<span class="visually-hidden"> de {{ e.nombre }} {{ e.apellido }}</span>
+                  </a>
+                  <a [routerLink]="['/estudiantes', e._id, 'editar']">
+                    Editar<span class="visually-hidden"> a {{ e.nombre }} {{ e.apellido }}</span>
+                  </a>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <app-pagination
+        label="Paginación de estudiantes"
+        [page]="p"
+        [pageSize]="list.query().pageSize"
+        [busy]="list.loading()"
+        (pageChange)="list.goTo($event)"
+        (pageSizeChange)="list.setPageSize($event)"
+      />
+    }
+  }
+</div>

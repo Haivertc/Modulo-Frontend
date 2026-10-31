@@ -1,0 +1,46 @@
+<main class="login">
+  <form class="login__panel" [formGroup]="form" (ngSubmit)="submit()" novalidate aria-labelledby="login-titulo">
+    <h1 id="login-titulo" class="login__title">Gestión académica</h1>
+    <p class="login__intro">Inicia sesión para consultar los expedientes de los estudiantes.</p>
+
+    <div class="field">
+      <label for="usuario">Usuario</label>
+      <input
+        id="usuario"
+        type="text"
+        formControlName="usuario"
+        autocomplete="username"
+        autocapitalize="none"
+        spellcheck="false"
+        [attr.aria-invalid]="form.controls.usuario.touched && form.controls.usuario.invalid"
+        [attr.aria-describedby]="form.controls.usuario.touched && form.controls.usuario.invalid ? 'usuario-error' : null"
+      />
+      @if (form.controls.usuario.touched && form.controls.usuario.invalid) {
+        <p id="usuario-error" class="field__error">Escribe tu usuario.</p>
+      }
+    </div>
+
+    <div class="field">
+      <label for="clave">Clave</label>
+      <input
+        id="clave"
+        type="password"
+        formControlName="clave"
+        autocomplete="current-password"
+        [attr.aria-invalid]="form.controls.clave.touched && form.controls.clave.invalid"
+        [attr.aria-describedby]="form.controls.clave.touched && form.controls.clave.invalid ? 'clave-error' : null"
+      />
+      @if (form.controls.clave.touched && form.controls.clave.invalid) {
+        <p id="clave-error" class="field__error">Escribe tu clave.</p>
+      }
+    </div>
+
+    @if (error(); as message) {
+      <p class="login__error" role="alert">{{ message }}</p>
+    }
+
+    <button type="submit" class="login__submit" [disabled]="submitting()">
+      {{ submitting() ? 'Iniciando sesión…' : 'Iniciar sesión' }}
+    </button>
+  </form>
+</main>

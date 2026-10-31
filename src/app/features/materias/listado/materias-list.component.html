@@ -1,0 +1,106 @@
+<div class="page">
+  <div class="page__header">
+    <h1 class="page__title">Materias</h1>
+    <a class="button" routerLink="/materias/nuevo">Nueva materia</a>
+  </div>
+
+  <form class="filters" [formGroup]="filtros" role="search" aria-label="Filtrar materias" (ngSubmit)="$event.preventDefault()">
+    <div class="field">
+      <label for="f-nombre">Nombre</label>
+      <input id="f-nombre" type="search" formControlName="nombre" autocomplete="off" />
+    </div>
+    <div class="field">
+      <label for="f-creditos">Créditos</label>
+      <input
+        id="f-creditos"
+        type="text"
+        inputmode="numeric"
+        formControlName="creditos"
+        autocomplete="off"
+        [attr.aria-invalid]="filtros.controls.creditos.invalid"
+        [attr.aria-describedby]="filtros.controls.creditos.invalid ? 'f-creditos-error' : null"
+      />
+      @if (filtros.controls.creditos.invalid) {
+        <p id="f-creditos-error" class="field__error">Escribe un número entero, por ejemplo 3.</p>
+      }
+    </div>
+    <div class="field">
+      <label for="f-programa">Programa</label>
+      <input id="f-programa" type="search" formControlName="programa" autocomplete="off" />
+    </div>
+    <button type="button" class="button button--secondary" [disabled]="!hayFiltros()" (click)="filtros.reset()">
+      Limpiar filtros
+    </button>
+  </form>
+
+  @if (list.loading()) {
+    <app-loading-state class="list-status" message="Cargando materias…" />
+  }
+
+  @if (list.error(); as err) {
+    <app-error-state [error]="err" (retry)="list.reload()" />
+  } @else if (list.page(); as p) {
+    @if (p.items.length === 0) {
+      <div class="list-empty">
+        @if (hayFiltros()) {
+          <p>Ninguna materia coincide con los filtros. Prueba con otros valores o limpia los filtros.</p>
+        } @else if (p.totalElements === 0) {
+          <p>Aún no hay materias registradas.</p>
+        } @else {
+          <p>Esta página no tiene materias.</p>
+          <button type="button" class="button" (click)="list.goTo(1)">Ir a la primera página</button>
+        }
+      </div>
+    } @else {
+      <div class="table-wrap" [class.is-busy]="list.loading()" [attr.aria-busy]="list.loading()">
+        <table class="table">
+          <caption class="visually-hidden">Materias, página {{ p.pageNumber }} de {{ p.totalPages }}</caption>
+          <thead>
+            <tr>
+              <th appSortHeader [direction]="list.direction('nombre')" (sort)="list.sort('nombre')">Nombre</th>
+              <th appSortHeader [direction]="list.direction('creditos')" (sort)="list.sort('creditos')">Créditos</th>
+              <th appSortHeader [direction]="list.direction('programa')" (sort)="list.sort('programa')">Programa</th>
+              <th scope="col" class="is-static">Descripción</th>
+              <th scope="col" class="is-static">Contenido temático</th>
+              <th scope="col" class="is-static"><span class="visually-hidden">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (m of p.items; track m.id) {
+              <tr>
+                <td data-label="Nombre">{{ m.nombre }}</td>
+                <td data-label="Créditos">{{ m.creditos }}</td>
+                <td data-label="Programa">{{ m.programa }}</td>
+                <td data-label="Descripción">{{ m.descripcion }}</td>
+                <td data-label="Contenido temático">
+                  <button type="button" class="link-button"
+                    [disabled]="descargando() === m.id" (click)="descargarContenido(m)">
+                    {{ descargando() === m.id ? 'Preparando…' : 'Descargar PDF' }}<span class="visually-hidden"> de {{ m.nombre }}</span>
+                  </button>
+                </td>
+                <td class="table__action">
+                  <a [routerLink]="['/materias', m.id, 'editar']">
+                    Editar<span class="visually-hidden"> {{ m.nombre }}</span>
+                  </a>
+                  <button type="button" class="link-button link-button--danger"
+                    [disabled]="deletion.deleting() === '' + m.id" (click)="eliminar(m)">
+                    Eliminar<span class="visually-hidden"> {{ m.nombre }}</span>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <app-pagination
+        label="Paginación de materias"
+        [page]="p"
+        [pageSize]="list.query().pageSize"
+        [busy]="list.loading()"
+        (pageChange)="list.goTo($event)"
+        (pageSizeChange)="list.setPageSize($event)"
+      />
+    }
+  }
+</div>

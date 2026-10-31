@@ -1,0 +1,56 @@
+<div class="page">
+  <a class="back-link" routerLink="/materias">Volver al listado de materias</a>
+  <h1 class="page__title">{{ entity.editing() ? 'Editar materia' : 'Nueva materia' }}</h1>
+
+  @if (entity.loading()) {
+    <app-loading-state message="Cargando los datos de la materia…" />
+  } @else if (entity.loadError(); as err) {
+    <app-error-state [error]="err" (retry)="entity.reload()" />
+  } @else {
+    <form class="form-panel" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      @if (entity.saveError(); as err) {
+        <app-error-state class="form-error" tabindex="-1" [error]="err" [retryable]="false" />
+      }
+
+      <div class="form-grid">
+        <div class="field field--wide">
+          <label for="nombre">Nombre</label>
+          <input id="nombre" formControlName="nombre"
+            [attr.aria-invalid]="!!error('nombre')" [attr.aria-describedby]="error('nombre') ? 'nombre-error' : null" />
+          @if (error('nombre'); as msg) { <p id="nombre-error" class="field__error">{{ msg }}</p> }
+        </div>
+        <div class="field">
+          <label for="creditos">Créditos</label>
+          <input id="creditos" type="text" inputmode="numeric" formControlName="creditos"
+            [attr.aria-invalid]="!!error('creditos')" [attr.aria-describedby]="error('creditos') ? 'creditos-error' : null" />
+          @if (error('creditos'); as msg) { <p id="creditos-error" class="field__error">{{ msg }}</p> }
+        </div>
+        <div class="field">
+          <label for="programa">Programa</label>
+          <input id="programa" formControlName="programa" list="programas-sugeridos"
+            [attr.aria-invalid]="!!error('programa')" [attr.aria-describedby]="error('programa') ? 'programa-error' : null" />
+          <datalist id="programas-sugeridos">
+            @for (nombre of programas(); track nombre) {
+              <option [value]="nombre"></option>
+            }
+          </datalist>
+          @if (error('programa'); as msg) { <p id="programa-error" class="field__error">{{ msg }}</p> }
+        </div>
+        <div class="field field--wide">
+          <label for="descripcion">Descripción <span class="field__optional">(opcional)</span></label>
+          <textarea id="descripcion" formControlName="descripcion" rows="4"
+            [attr.aria-invalid]="!!error('descripcion')"
+            [attr.aria-describedby]="error('descripcion') ? 'descripcion-error' : null"></textarea>
+          @if (error('descripcion'); as msg) { <p id="descripcion-error" class="field__error">{{ msg }}</p> }
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="button" [disabled]="entity.saving()">
+          {{ entity.saving() ? 'Guardando…' : entity.editing() ? 'Guardar cambios' : 'Crear materia' }}
+        </button>
+        <a class="button button--secondary" routerLink="/materias">Cancelar</a>
+      </div>
+    </form>
+  }
+</div>
