@@ -1,7 +1,9 @@
 <div class="page">
   <div class="page__header">
     <h1 class="page__title">Materias</h1>
-    <a class="button" routerLink="/materias/nuevo">Nueva materia</a>
+    @if (esAdmin()) {
+      <a class="button" routerLink="/materias/nuevo">Nueva materia</a>
+    }
   </div>
 
   <form class="filters" [formGroup]="filtros" role="search" aria-label="Filtrar materias" (ngSubmit)="$event.preventDefault()">
@@ -26,7 +28,12 @@
     </div>
     <div class="field">
       <label for="f-programa">Programa</label>
-      <input id="f-programa" type="search" formControlName="programa" autocomplete="off" />
+      <select id="f-programa" formControlName="programa">
+        <option value="">Todos</option>
+        @for (nombre of opcionesPrograma(); track nombre) {
+          <option [value]="nombre">{{ nombre }}</option>
+        }
+      </select>
     </div>
     <button type="button" class="button button--secondary" [disabled]="!hayFiltros()" (click)="filtros.reset()">
       Limpiar filtros
@@ -57,36 +64,73 @@
           <caption class="visually-hidden">Materias, página {{ p.pageNumber }} de {{ p.totalPages }}</caption>
           <thead>
             <tr>
+              @if (esAdmin()) {
+                <th scope="col" class="is-static">ID</th>
+              }
               <th appSortHeader [direction]="list.direction('nombre')" (sort)="list.sort('nombre')">Nombre</th>
               <th appSortHeader [direction]="list.direction('creditos')" (sort)="list.sort('creditos')">Créditos</th>
               <th appSortHeader [direction]="list.direction('programa')" (sort)="list.sort('programa')">Programa</th>
               <th scope="col" class="is-static">Descripción</th>
               <th scope="col" class="is-static">Contenido temático</th>
-              <th scope="col" class="is-static"><span class="visually-hidden">Acciones</span></th>
+              @if (esAdmin()) {
+                <th scope="col" class="is-static"><span class="visually-hidden">Acciones</span></th>
+              }
             </tr>
           </thead>
           <tbody>
             @for (m of p.items; track m.id) {
               <tr>
+                @if (esAdmin()) {
+                  <td data-label="ID" class="table__id">{{ m.id }}</td>
+                }
                 <td data-label="Nombre">{{ m.nombre }}</td>
                 <td data-label="Créditos">{{ m.creditos }}</td>
                 <td data-label="Programa">{{ m.programa }}</td>
                 <td data-label="Descripción">{{ m.descripcion }}</td>
-                <td data-label="Contenido temático">
-                  <button type="button" class="link-button"
-                    [disabled]="descargando() === m.id" (click)="descargarContenido(m)">
-                    {{ descargando() === m.id ? 'Preparando…' : 'Descargar PDF' }}<span class="visually-hidden"> de {{ m.nombre }}</span>
-                  </button>
+                <td data-label="Contenido temático" class="table__content" aria-live="polite">
+                  @switch (estadoContenido(m.id)) {
+                    @case ('consultando') {
+                      <span class="table__muted">Consultando…</span>
+                    }
+                    @case ('error') {
+                      <span class="table__muted">No se pudo consultar.</span>
+                      <button type="button" class="link-button" (click)="consultarContenido(m.id)">
+                        Reintentar<span class="visually-hidden"> la consulta del contenido de {{ m.nombre }}</span>
+                      </button>
+                    }
+                    @case ('con') {
+                      <button type="button" class="link-button"
+                        [disabled]="descargando() === m.id" (click)="descargarContenido(m)">
+                        {{ descargando() === m.id ? 'Preparando…' : 'Descargar PDF' }}<span class="visually-hidden"> de {{ m.nombre }}</span>
+                      </button>
+                      @if (esAdmin()) {
+                        <button type="button" class="link-button" (click)="abrirSubida(m, true)">
+                          Reemplazar PDF<span class="visually-hidden"> de {{ m.nombre }}</span>
+                        </button>
+                      }
+                    }
+                    @case ('sin') {
+                      @if (esAdmin()) {
+                        <button type="button" class="link-button" (click)="abrirSubida(m, false)">
+                          Subir PDF<span class="visually-hidden"> de {{ m.nombre }}</span>
+                        </button>
+                      } @else {
+                        <span class="table__muted">Sin contenido</span>
+                      }
+                    }
+                  }
                 </td>
-                <td class="table__action">
-                  <a [routerLink]="['/materias', m.id, 'editar']">
-                    Editar<span class="visually-hidden"> {{ m.nombre }}</span>
-                  </a>
-                  <button type="button" class="link-button link-button--danger"
-                    [disabled]="deletion.deleting() === '' + m.id" (click)="eliminar(m)">
-                    Eliminar<span class="visually-hidden"> {{ m.nombre }}</span>
-                  </button>
-                </td>
+                @if (esAdmin()) {
+                  <td class="table__action">
+                    <a [routerLink]="['/materias', m.id, 'editar']">
+                      Editar<span class="visually-hidden"> {{ m.nombre }}</span>
+                    </a>
+                    <button type="button" class="link-button link-button--danger"
+                      [disabled]="deletion.deleting() === '' + m.id" (click)="eliminar(m)">
+                      Eliminar<span class="visually-hidden"> {{ m.nombre }}</span>
+                    </button>
+                  </td>
+                }
               </tr>
             }
           </tbody>
@@ -104,3 +148,16 @@
     }
   }
 </div>
+
+@if (esAdmin()) {
+  <app-file-upload-dialog
+    [titulo]="tituloSubida()"
+    descripcion="El archivo se guarda en AWS S3. Al reemplazarlo, la descarga entrega el PDF más reciente."
+    [tipos]="formatosPdf"
+    [maxBytes]="maxBytesPdf"
+    etiquetaEnviar="Subir PDF"
+    mensajeNoEncontrado="La materia ya no existe. Recarga el listado."
+    [subir]="subirPdf"
+    (subido)="alSubirPdf()"
+  />
+}

@@ -68,6 +68,28 @@
   width: 1%;
 }
 
+// Celda con varias acciones o un estado en texto (p. ej. contenido temático)
+.table__content {
+  white-space: nowrap;
+
+  > * + * {
+    margin-left: var(--space-3);
+  }
+}
+
+.table__muted {
+  color: var(--color-ink-muted);
+}
+
+// Identificador técnico (solo ADMIN): monoespaciado y discreto; los ObjectId de 24
+// caracteres se cortan en cualquier punto para no ensanchar la tabla
+.table__id {
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+  overflow-wrap: anywhere;
+}
+
 // Foto del estudiante (URL firmada de S3) o sus iniciales si no tiene
 .avatar {
   display: inline-grid;

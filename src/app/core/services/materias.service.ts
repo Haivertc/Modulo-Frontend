@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpContext } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 
@@ -12,6 +12,7 @@ import {
   SortDirection,
 } from '../../models';
 import { APP_CONFIG } from '../config/app-config';
+import { SKIP_LOADING } from '../http/http-context';
 import { toHttpParams } from '../http/query-params';
 
 @Injectable({ providedIn: 'root' })
@@ -59,8 +60,20 @@ export class MateriasService {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
 
-  /** PDFs de contenido temático de la materia, en orden de subida, cada uno con su URL firmada. */
-  getContenidoTematico(id: number): Observable<ContenidoTematico[]> {
-    return this.http.get<ContenidoTematico[]>(`${this.baseUrl}/${id}/contenido-tematico`);
+  /**
+   * PDFs de contenido temático de la materia, en orden de subida, cada uno con su URL firmada.
+   * Con `segundoPlano` no activa el indicador global de carga (consulta de estado por fila).
+   */
+  getContenidoTematico(id: number, { segundoPlano = false } = {}): Observable<ContenidoTematico[]> {
+    return this.http.get<ContenidoTematico[]>(`${this.baseUrl}/${id}/contenido-tematico`, {
+      context: new HttpContext().set(SKIP_LOADING, segundoPlano),
+    });
+  }
+
+  /** Sube un PDF (campo `archivo`, máx. 10 MB). El módulo lo envía directo a AWS S3. */
+  subirContenidoTematico(id: number, archivo: File): Observable<ContenidoTematico> {
+    const datos = new FormData();
+    datos.append('archivo', archivo, archivo.name);
+    return this.http.post<ContenidoTematico>(`${this.baseUrl}/${id}/contenido-tematico`, datos);
   }
 }
