@@ -5,6 +5,7 @@ import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 
 import { EstudiantesPageResponse } from '../../../models';
+import { cerrarSesion, iniciarSesionComo } from '../../../../testing/session';
 import { EstudiantesListComponent } from './estudiantes-list.component';
 
 const DEBOUNCE = 400;
@@ -210,5 +211,52 @@ describe('EstudiantesListComponent: fotografía', () => {
     const fila = el.querySelector('tbody tr:first-child')!;
     expect(fila.querySelector('img')).toBeNull();
     expect(fila.querySelector('.avatar--vacio')?.textContent?.trim()).toBe('NA');
+  });
+});
+
+describe('EstudiantesListComponent: roles', () => {
+  afterEach(() => cerrarSesion());
+
+  it('ESTUDIANTE ve "Ver detalle" pero no "Nuevo estudiante" ni "Editar"', async () => {
+    iniciarSesionComo('ESTUDIANTE');
+    const { el, flushList } = await setup('/estudiantes');
+    await flushList(pagina(1, 2));
+
+    expect(el.textContent).not.toContain('Nuevo estudiante');
+    expect(el.querySelector('a[href*="editar"]')).toBeNull();
+    expect(el.querySelectorAll('.table__action a').length).toBe(2);
+    expect(el.querySelector('.table__action')?.textContent).toContain('Ver detalle');
+    // Tampoco ve los identificadores
+    expect([...el.querySelectorAll('thead th')].map((th) => th.textContent?.trim())).not.toContain('ID');
+    expect(el.querySelector('.table__id')).toBeNull();
+  });
+
+  it('ADMIN ve "Nuevo estudiante" y "Editar"', async () => {
+    iniciarSesionComo('ADMIN');
+    const { el, flushList } = await setup('/estudiantes');
+    await flushList(pagina(1, 2));
+
+    expect(el.textContent).toContain('Nuevo estudiante');
+    expect(el.querySelectorAll('a[href*="editar"]').length).toBe(2);
+  });
+
+  it('ADMIN ve el _id de cada estudiante junto a la foto', async () => {
+    iniciarSesionComo('ADMIN');
+    const { el, flushList } = await setup('/estudiantes');
+    await flushList(pagina(1, 2));
+
+    const cabeceras = [...el.querySelectorAll('thead th')].map((th) => th.textContent?.trim());
+    expect(cabeceras.slice(0, 2)).toEqual(['Foto', 'ID']);
+    expect([...el.querySelectorAll('.table__id')].map((td) => td.textContent?.trim())).toEqual(['id-1-0', 'id-1-1']);
+  });
+
+  it('con ADMIN el orden por Apellido sigue funcionando pese a la columna extra', async () => {
+    iniciarSesionComo('ADMIN');
+    const { el, flushList, stable, router } = await setup('/estudiantes');
+    await flushList();
+
+    el.querySelector<HTMLButtonElement>('thead th:nth-child(4) button')!.click();
+    await stable();
+    expect(router.url).toBe('/estudiantes?sortBy=apellido&sortDirection=asc');
   });
 });

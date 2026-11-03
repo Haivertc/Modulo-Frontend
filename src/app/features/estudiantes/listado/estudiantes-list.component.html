@@ -1,7 +1,9 @@
 <div class="page">
   <div class="page__header">
     <h1 class="page__title">Estudiantes</h1>
-    <a class="button" routerLink="/estudiantes/nuevo">Nuevo estudiante</a>
+    @if (esAdmin()) {
+      <a class="button" routerLink="/estudiantes/nuevo">Nuevo estudiante</a>
+    }
   </div>
 
   <form class="filters" [formGroup]="filtros" role="search" aria-label="Filtrar estudiantes" (ngSubmit)="$event.preventDefault()">
@@ -52,6 +54,9 @@
           <thead>
             <tr>
               <th scope="col" class="is-static">Foto</th>
+              @if (esAdmin()) {
+                <th scope="col" class="is-static">ID</th>
+              }
               <th appSortHeader [direction]="list.direction('nombre')" (sort)="list.sort('nombre')">Nombre</th>
               <th appSortHeader [direction]="list.direction('apellido')" (sort)="list.sort('apellido')">Apellido</th>
               <th appSortHeader [direction]="list.direction('correo')" (sort)="list.sort('correo')">Correo</th>
@@ -79,6 +84,9 @@
                     <span class="visually-hidden">Sin fotografía</span>
                   }
                 </td>
+                @if (esAdmin()) {
+                  <td data-label="ID" class="table__id">{{ e._id }}</td>
+                }
                 <td data-label="Nombre">{{ e.nombre }}</td>
                 <td data-label="Apellido">{{ e.apellido }}</td>
                 <td data-label="Correo" class="table__wrap-anywhere">{{ e.correo }}</td>
@@ -88,9 +96,11 @@
                   <a [routerLink]="['/estudiantes', e._id]">
                     Ver detalle<span class="visually-hidden"> de {{ e.nombre }} {{ e.apellido }}</span>
                   </a>
-                  <a [routerLink]="['/estudiantes', e._id, 'editar']">
-                    Editar<span class="visually-hidden"> a {{ e.nombre }} {{ e.apellido }}</span>
-                  </a>
+                  @if (esAdmin()) {
+                    <a [routerLink]="['/estudiantes', e._id, 'editar']">
+                      Editar<span class="visually-hidden"> a {{ e.nombre }} {{ e.apellido }}</span>
+                    </a>
+                  }
                 </td>
               </tr>
             }

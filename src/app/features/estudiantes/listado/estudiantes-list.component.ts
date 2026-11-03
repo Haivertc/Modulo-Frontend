@@ -4,6 +4,7 @@ import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { catchError, of } from 'rxjs';
 
+import { AuthService } from '../../../core/auth/auth.service';
 import { syncFilterForm } from '../../../core/list/filter-form-sync';
 import { urlPaginatedList } from '../../../core/list/url-paginated-list';
 import { EstudiantesService } from '../../../core/services/estudiantes.service';
@@ -28,6 +29,8 @@ import { SortHeaderComponent } from '../../../shared/ui/sort-header.component';
 })
 export class EstudiantesListComponent {
   private readonly estudiantes = inject(EstudiantesService);
+  /** Solo ADMIN ve las acciones de escritura (el Gateway las rechaza con 403 para ESTUDIANTE). */
+  protected readonly esAdmin = inject(AuthService).esAdmin;
 
   protected readonly list = urlPaginatedList<Estudiante>({
     sortFields: ['nombre', 'apellido', 'correo', 'contacto.ciudad'],

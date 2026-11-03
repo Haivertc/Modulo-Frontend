@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
+import { AuthService } from '../../../core/auth/auth.service';
 import { deleteAction } from '../../../core/feedback/delete-action';
 import { syncFilterForm } from '../../../core/list/filter-form-sync';
 import { urlPaginatedList } from '../../../core/list/url-paginated-list';
@@ -29,6 +30,8 @@ import { SortHeaderComponent } from '../../../shared/ui/sort-header.component';
 })
 export class InscripcionesListComponent {
   private readonly inscripciones = inject(InscripcionesService);
+  /** Solo ADMIN ve las acciones de escritura (el Gateway las rechaza con 403 para ESTUDIANTE). */
+  protected readonly esAdmin = inject(AuthService).esAdmin;
 
   protected readonly list = urlPaginatedList<InscripcionResumen>({
     sortFields: ['periodo', 'estado', 'estudianteId', 'cursoId'],

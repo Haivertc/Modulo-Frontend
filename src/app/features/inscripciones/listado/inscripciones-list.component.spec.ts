@@ -5,6 +5,7 @@ import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 
 import { InscripcionesPageResponse } from '../../../models';
+import { cerrarSesion, iniciarSesionComo } from '../../../../testing/session';
 import { InscripcionesListComponent } from './inscripciones-list.component';
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -94,5 +95,29 @@ describe('InscripcionesListComponent', () => {
     await stable();
     expect(router.url).toBe('/inscripciones?sortBy=estado&sortDirection=asc');
     expect(await flushList()).toEqual({ pageNumber: '1', pageSize: '20', sortBy: 'estado', sortDirection: 'asc' });
+  });
+});
+
+describe('InscripcionesListComponent: roles', () => {
+  afterEach(() => cerrarSesion());
+
+  it('ESTUDIANTE no ve Nueva, Editar ni Eliminar (ni la columna de acciones)', async () => {
+    iniciarSesionComo('ESTUDIANTE');
+    const { el, flushList } = await setup('/inscripciones');
+    await flushList();
+
+    expect(el.textContent).not.toContain('Nueva inscripción');
+    expect(el.querySelector('.table__action')).toBeNull();
+    expect(el.querySelectorAll('thead th').length).toBe(5);
+  });
+
+  it('ADMIN ve Nueva, Editar y Eliminar', async () => {
+    iniciarSesionComo('ADMIN');
+    const { el, flushList } = await setup('/inscripciones');
+    await flushList();
+
+    expect(el.textContent).toContain('Nueva inscripción');
+    expect(el.querySelectorAll('a[href*="editar"]').length).toBe(2);
+    expect(el.querySelectorAll('.link-button--danger').length).toBe(2);
   });
 });

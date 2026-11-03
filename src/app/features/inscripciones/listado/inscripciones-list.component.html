@@ -1,7 +1,9 @@
 <div class="page">
   <div class="page__header">
     <h1 class="page__title">Inscripciones</h1>
-    <a class="button" routerLink="/inscripciones/nuevo">Nueva inscripción</a>
+    @if (esAdmin()) {
+      <a class="button" routerLink="/inscripciones/nuevo">Nueva inscripción</a>
+    }
   </div>
 
   <form class="filters" [formGroup]="filtros" role="search" aria-label="Filtrar inscripciones" (ngSubmit)="$event.preventDefault()">
@@ -51,7 +53,9 @@
               <th appSortHeader [direction]="list.direction('estudianteId')" (sort)="list.sort('estudianteId')">Estudiante</th>
               <th appSortHeader [direction]="list.direction('cursoId')" (sort)="list.sort('cursoId')">Curso</th>
               <th scope="col" class="is-static">Notas</th>
-              <th scope="col" class="is-static"><span class="visually-hidden">Acciones</span></th>
+              @if (esAdmin()) {
+                <th scope="col" class="is-static"><span class="visually-hidden">Acciones</span></th>
+              }
             </tr>
           </thead>
           <tbody>
@@ -70,15 +74,17 @@
                     Sin notas
                   }
                 </td>
-                <td class="table__action">
-                  <a [routerLink]="['/inscripciones', i._id, 'editar']">
-                    Editar<span class="visually-hidden"> inscripción del periodo {{ i.periodo }} al curso {{ i.cursoId }}</span>
-                  </a>
-                  <button type="button" class="link-button link-button--danger"
-                    [disabled]="deletion.deleting() === i._id" (click)="eliminar(i)">
-                    Eliminar<span class="visually-hidden"> inscripción del periodo {{ i.periodo }} al curso {{ i.cursoId }}</span>
-                  </button>
-                </td>
+                @if (esAdmin()) {
+                  <td class="table__action">
+                    <a [routerLink]="['/inscripciones', i._id, 'editar']">
+                      Editar<span class="visually-hidden"> inscripción del periodo {{ i.periodo }} al curso {{ i.cursoId }}</span>
+                    </a>
+                    <button type="button" class="link-button link-button--danger"
+                      [disabled]="deletion.deleting() === i._id" (click)="eliminar(i)">
+                      Eliminar<span class="visually-hidden"> inscripción del periodo {{ i.periodo }} al curso {{ i.cursoId }}</span>
+                    </button>
+                  </td>
+                }
               </tr>
             }
           </tbody>
