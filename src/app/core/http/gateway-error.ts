@@ -41,6 +41,13 @@ export function describeGatewayError(error: unknown, notFoundMessage: string): G
         : (gatewayMessage ?? 'Revisa los campos del formulario e intenta de nuevo.'),
     };
   }
+  if (status === 413) {
+    return {
+      status,
+      title: 'El archivo es demasiado grande',
+      message: gatewayMessage ?? 'Elige un archivo más liviano e intenta de nuevo.',
+    };
+  }
   if (status === 502) {
     const puerto = gatewayMessage?.match(/:(\d{4})/)?.[1];
     const modulo = puerto ? MODULO_POR_PUERTO[puerto] : undefined;
@@ -80,10 +87,16 @@ function readGatewayMessage(error: HttpErrorResponse): string | undefined {
   return undefined;
 }
 
-/** Índice único violado en MongoDB (p. ej. correo de estudiante repetido): `{ error: { code: 11000 } }`. */
+/**
+ * Índice único violado (p. ej. correo de estudiante repetido). Estudiantes responde
+ * `{ error: { code: 'P2002' } }` desde la migración a PostgreSQL (Prisma); se acepta también
+ * el `code: 11000` de la versión con MongoDB.
+ */
 function isDuplicateKey(error: HttpErrorResponse): boolean {
   const body: unknown = error.error;
   if (typeof body !== 'object' || body === null) return false;
   const inner: unknown = (body as Record<string, unknown>)['error'];
-  return typeof inner === 'object' && inner !== null && (inner as Record<string, unknown>)['code'] === 11000;
+  if (typeof inner !== 'object' || inner === null) return false;
+  const code = (inner as Record<string, unknown>)['code'];
+  return code === 'P2002' || code === 11000;
 }
