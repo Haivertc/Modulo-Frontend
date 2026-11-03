@@ -64,6 +64,16 @@ export class EstudiantesService {
     return this.http.get<Programa[]>(`${this.baseUrl}/programas`);
   }
 
+  /**
+   * Sube o reemplaza la fotografía (campo `fotografia`, JPG/PNG, máx. 2 MB). El módulo la
+   * envía directo a AWS S3 y responde el estudiante con `fotografia.url` firmada.
+   */
+  subirFotografia(id: string, archivo: File): Observable<Estudiante> {
+    const datos = new FormData();
+    datos.append('fotografia', archivo, archivo.name);
+    return this.http.post<Estudiante>(`${this.url(id)}/fotografia`, datos);
+  }
+
   /** Composición BFF del Gateway: estudiante con sus inscripciones, cursos, docentes y notas. */
   getDetalle(id: string): Observable<EstudianteDetalle> {
     return this.http.get<EstudianteDetalle>(`${this.url(id)}/detalle`);

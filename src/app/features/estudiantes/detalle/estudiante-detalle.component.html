@@ -7,36 +7,88 @@
     <app-error-state [error]="err" (retry)="reload()" />
   } @else if (detalle(); as d) {
     <section class="profile" aria-labelledby="estudiante-nombre">
-      <div class="profile__header">
-        <h1 id="estudiante-nombre" class="profile__name">{{ d.estudiante.nombre }} {{ d.estudiante.apellido }}</h1>
-        <div class="profile__actions">
-          <a class="button button--secondary" [routerLink]="['/estudiantes', d.estudiante._id, 'editar']">Editar</a>
-          <button type="button" class="button button--secondary profile__delete"
-            [disabled]="deletion.deleting() !== null" (click)="eliminar(d.estudiante)">
-            {{ deletion.deleting() ? 'Eliminando…' : 'Eliminar' }}
+      <!-- Columna de la fotografía: imagen (URL firmada de S3) o iniciales, y su botón -->
+      <div class="profile__media">
+        @if (d.estudiante.fotografia?.url && !fotoFallida()) {
+          <img class="profile__photo" [src]="d.estudiante.fotografia!.url"
+            [alt]="'Fotografía de ' + d.estudiante.nombre + ' ' + d.estudiante.apellido"
+            width="160" height="160" (error)="fotoFallida.set(true)" />
+        } @else {
+          <span class="profile__photo profile__photo--vacia" aria-hidden="true">
+            {{ d.estudiante.nombre.charAt(0) }}{{ d.estudiante.apellido.charAt(0) }}
+          </span>
+          <span class="visually-hidden">Sin fotografía</span>
+        }
+        @if (esAdmin()) {
+          <button type="button" class="button button--secondary profile__photo-button" (click)="subidaFoto.abrir()">
+            {{ d.estudiante.fotografia ? 'Cambiar foto' : 'Subir foto' }}
           </button>
+        }
+      </div>
+
+      <!-- Columna de la información textual -->
+      <div class="profile__body">
+        <div class="profile__header">
+          <h1 id="estudiante-nombre" class="profile__name">{{ d.estudiante.nombre }} {{ d.estudiante.apellido }}</h1>
+          @if (esAdmin()) {
+            <div class="profile__actions">
+              <a class="button button--secondary" [routerLink]="['/estudiantes', d.estudiante._id, 'editar']">Editar</a>
+              <button type="button" class="button button--secondary profile__delete"
+                [disabled]="deletion.deleting() !== null" (click)="eliminar(d.estudiante)">
+                {{ deletion.deleting() ? 'Eliminando…' : 'Eliminar' }}
+              </button>
+            </div>
+          }
+        </div>
+
+        <div class="profile__groups">
+          <section class="profile__group" aria-labelledby="datos-personales">
+            <h2 id="datos-personales" class="profile__group-title">Datos personales</h2>
+            <dl class="facts">
+              <div>
+                <dt>Fecha de nacimiento</dt>
+                <dd>{{ fechaNacimiento(d.estudiante.fecha_nacimiento) }}</dd>
+              </div>
+              <div>
+                <dt>Correo</dt>
+                <dd><a [href]="'mailto:' + d.estudiante.correo">{{ d.estudiante.correo }}</a></dd>
+              </div>
+            </dl>
+          </section>
+
+          <section class="profile__group" aria-labelledby="datos-contacto">
+            <h2 id="datos-contacto" class="profile__group-title">Contacto</h2>
+            <dl class="facts">
+              <div>
+                <dt>Teléfono</dt>
+                <dd>{{ d.estudiante.contacto.telefono }}</dd>
+              </div>
+              <div>
+                <dt>Dirección</dt>
+                <dd>{{ d.estudiante.contacto.direccion }}, {{ d.estudiante.contacto.ciudad }}</dd>
+              </div>
+            </dl>
+          </section>
+
+          <section class="profile__group" aria-labelledby="datos-programa">
+            <h2 id="datos-programa" class="profile__group-title">Programa</h2>
+            <dl class="facts">
+              <div>
+                <dt>Programa</dt>
+                <dd>{{ d.estudiante.programa.nombre }}</dd>
+              </div>
+              <div>
+                <dt>Código del programa</dt>
+                <dd>{{ d.estudiante.programa.codigo }}</dd>
+              </div>
+              <div>
+                <dt>Facultad</dt>
+                <dd>{{ d.estudiante.programa.facultad }}</dd>
+              </div>
+            </dl>
+          </section>
         </div>
       </div>
-      <p class="profile__program">{{ d.estudiante.programa.nombre }}, {{ d.estudiante.programa.facultad }}</p>
-
-      <dl class="facts profile__facts">
-        <div>
-          <dt>Correo</dt>
-          <dd><a [href]="'mailto:' + d.estudiante.correo">{{ d.estudiante.correo }}</a></dd>
-        </div>
-        <div>
-          <dt>Teléfono</dt>
-          <dd>{{ d.estudiante.contacto.telefono }}</dd>
-        </div>
-        <div>
-          <dt>Dirección</dt>
-          <dd>{{ d.estudiante.contacto.direccion }}, {{ d.estudiante.contacto.ciudad }}</dd>
-        </div>
-        <div>
-          <dt>Código del programa</dt>
-          <dd>{{ d.estudiante.programa.codigo }}</dd>
-        </div>
-      </dl>
     </section>
 
     <section class="enrollments" aria-labelledby="inscripciones-titulo">
@@ -100,3 +152,16 @@
     </section>
   }
 </div>
+
+<!-- Fuera del @if del estado: el diálogo sigue montado mientras el detalle se recarga tras subir -->
+<app-file-upload-dialog
+  #subidaFoto
+  titulo="Fotografía del estudiante"
+  descripcion="La imagen se guarda en AWS S3 y reemplaza la fotografía actual."
+  [tipos]="formatosFoto"
+  [maxBytes]="maxBytesFoto"
+  etiquetaEnviar="Subir foto"
+  mensajeNoEncontrado="El estudiante ya no existe; es posible que alguien lo haya eliminado."
+  [subir]="subirFoto"
+  (subido)="alSubirFoto()"
+/>

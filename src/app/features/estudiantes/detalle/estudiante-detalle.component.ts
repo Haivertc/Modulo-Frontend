@@ -1,23 +1,29 @@
 import { DecimalPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
-import { Subject, combineLatest, startWith, switchMap } from 'rxjs';
+import { Observable, Subject, combineLatest, startWith, switchMap } from 'rxjs';
 
+import { AuthService } from '../../../core/auth/auth.service';
 import { deleteAction } from '../../../core/feedback/delete-action';
+import { NotificationService } from '../../../core/feedback/notification.service';
+import { FORMATOS_FOTOGRAFIA, MAX_BYTES_FOTOGRAFIA } from '../../../core/files/formatos';
 import { LOADING, LoadState, toLoadState } from '../../../core/http/load-state';
 import { EstudiantesService } from '../../../core/services/estudiantes.service';
 import { Estudiante, EstudianteDetalle, Nota } from '../../../models';
 import { ErrorStateComponent } from '../../../shared/ui/error-state.component';
+import { FileUploadDialogComponent } from '../../../shared/ui/file-upload-dialog.component';
 import { LoadingStateComponent } from '../../../shared/ui/loading-state.component';
 
 /** Escala de calificación colombiana: 0.0 a 5.0, se aprueba con 3.0. */
 const NOTA_MAXIMA = 5;
 const NOTA_APROBATORIA = 3;
 
+const FORMATO_FECHA = new Intl.DateTimeFormat('es-CO', { dateStyle: 'long', timeZone: 'UTC' });
+
 @Component({
   selector: 'app-estudiante-detalle',
-  imports: [DecimalPipe, RouterLink, LoadingStateComponent, ErrorStateComponent],
+  imports: [DecimalPipe, RouterLink, LoadingStateComponent, ErrorStateComponent, FileUploadDialogComponent],
   templateUrl: './estudiante-detalle.component.html',
   styleUrl: './estudiante-detalle.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -57,7 +63,27 @@ export class EstudianteDetalleComponent {
 
   protected readonly deletion = deleteAction();
 
+  /** Solo ADMIN ve Editar, Eliminar y la subida de foto (el Gateway rechaza la escritura con 403). */
+  protected readonly esAdmin = inject(AuthService).esAdmin;
+  private readonly notifications = inject(NotificationService);
+
+  // ---------- Fotografía (S3) ----------
+
+  /** La URL firmada vence en 1 hora: si la imagen no carga se muestran las iniciales. */
+  protected readonly fotoFallida = signal(false);
+  protected readonly formatosFoto = FORMATOS_FOTOGRAFIA;
+  protected readonly maxBytesFoto = MAX_BYTES_FOTOGRAFIA;
+  protected readonly subirFoto = (archivo: File): Observable<unknown> =>
+    this.estudiantes.subirFotografia(this.id(), archivo);
+
+  protected alSubirFoto(): void {
+    this.notifications.success('Se actualizó la fotografía.');
+    // Se recarga el detalle para obtener la nueva URL firmada desde el Gateway
+    this.reload();
+  }
+
   protected reload(): void {
+    this.fotoFallida.set(false);
     this.reload$.next();
   }
 
@@ -75,6 +101,15 @@ export class EstudianteDetalleComponent {
       successMessage: `Se eliminó a ${nombre}.`,
       onSuccess: () => void this.router.navigateByUrl('/estudiantes'),
     });
+  }
+
+  /**
+   * "2003-05-20T00:00:00.000Z" -> "20 de mayo de 2003". Se formatea en UTC: la fecha se guarda
+   * a medianoche UTC y en la zona horaria de Colombia se mostraría como el día anterior.
+   */
+  protected fechaNacimiento(iso: string): string {
+    const fecha = new Date(iso);
+    return Number.isNaN(fecha.getTime()) ? iso : FORMATO_FECHA.format(fecha);
   }
 
   protected posicion(nota: Nota): number {

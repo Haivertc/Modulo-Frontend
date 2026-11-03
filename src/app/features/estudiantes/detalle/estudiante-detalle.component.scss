@@ -1,27 +1,57 @@
+// Perfil: columna de la fotografía junto a la información textual
+.profile {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-6) var(--space-8);
+  padding: var(--space-6);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+}
+
+.profile__media {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+// Foto (URL firmada de S3) o iniciales si no tiene
+.profile__photo {
+  display: grid;
+  place-items: center;
+  width: 10rem;
+  height: 10rem;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  object-fit: cover;
+}
+
+.profile__photo--vacia {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  color: var(--color-ink-muted);
+  background: var(--color-background);
+}
+
+.profile__photo-button {
+  width: 100%;
+}
+
+.profile__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
 .profile__header {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-3) var(--space-6);
-}
-
-.profile__actions {
-  display: flex;
-  gap: var(--space-3);
-}
-
-.profile__delete {
-  color: var(--color-grade-fail);
-  border-color: var(--color-grade-fail);
-}
-
-// Perfil
-.profile {
-  padding: var(--space-6);
-  background: var(--color-surface);
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-md);
 }
 
 .profile__name {
@@ -32,10 +62,33 @@
   line-height: var(--leading-tight);
 }
 
-.profile__program {
-  margin: var(--space-1) 0 var(--space-6);
-  font-size: var(--text-lg);
+.profile__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.profile__delete {
+  color: var(--color-grade-fail);
+  border-color: var(--color-grade-fail);
+}
+
+// Datos personales, contacto y programa: columnas que se acomodan al ancho disponible
+.profile__groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: var(--space-6);
+}
+
+.profile__group-title {
+  margin: 0 0 var(--space-3);
+  padding-bottom: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
   color: var(--color-ink-muted);
+  border-bottom: 1px solid var(--color-line);
 }
 
 .facts {
@@ -58,9 +111,26 @@
   }
 }
 
-.profile__facts {
-  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
-  gap: var(--space-4) var(--space-6);
+// En pantallas angostas la foto y su botón quedan arriba, en fila, y los datos debajo
+@media (max-width: 39.99rem) {
+  .profile {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .profile__media {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-4);
+  }
+
+  .profile__photo {
+    width: 6rem;
+    height: 6rem;
+  }
+
+  .profile__photo-button {
+    width: auto;
+  }
 }
 
 // Inscripciones
