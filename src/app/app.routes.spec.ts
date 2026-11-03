@@ -29,9 +29,28 @@ async function harness(conSesion: boolean) {
 }
 
 describe('Rutas', () => {
-  it('la raíz redirige a /estudiantes dentro del layout principal', async () => {
+  it('la raíz redirige estrictamente a /login, con o sin sesión', async () => {
+    for (const conSesion of [false, true]) {
+      TestBed.resetTestingModule();
+      const h = await harness(conSesion);
+      await h.navigateByUrl('/');
+      expect(TestBed.inject(Router).url).toBe('/login');
+      expect((h.fixture.nativeElement as HTMLElement).querySelector('app-login')).not.toBeNull();
+    }
+  });
+
+  it('sin sesión, /estudiantes, /materias e /inscripciones redirigen al login recordando la URL', async () => {
+    for (const ruta of ['/estudiantes', '/materias', '/inscripciones']) {
+      TestBed.resetTestingModule();
+      const h = await harness(false);
+      await h.navigateByUrl(ruta);
+      expect(TestBed.inject(Router).url).toBe(`/login?returnUrl=${encodeURIComponent(ruta)}`);
+    }
+  });
+
+  it('con sesión, /estudiantes se renderiza dentro del layout principal', async () => {
     const h = await harness(true);
-    await h.navigateByUrl('/');
+    await h.navigateByUrl('/estudiantes');
 
     expect(TestBed.inject(Router).url).toBe('/estudiantes');
     await h.fixture.whenStable();

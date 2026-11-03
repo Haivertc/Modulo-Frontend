@@ -78,6 +78,21 @@ describe('LoginComponent', () => {
 
     backend.expectOne('/api/auth/login').flush({ token: 'a.b.c' });
     await fixture.whenStable();
-    expect(navigate).toHaveBeenCalledWith('/');
+    expect(navigate).toHaveBeenCalledWith('/estudiantes');
+  });
+
+  it('sin URL de retorno (o con "/") entra a /estudiantes, no a la raíz que redirige al login', async () => {
+    for (const returnUrl of [undefined, '/']) {
+      TestBed.resetTestingModule();
+      const { fixture, type, submit, backend } = await render(returnUrl);
+      const navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+      type('#usuario', 'admin');
+      type('#clave', 'admin123');
+      await submit();
+
+      backend.expectOne('/api/auth/login').flush({ token: 'a.b.c' });
+      await fixture.whenStable();
+      expect(navigate).toHaveBeenCalledWith('/estudiantes');
+    }
   });
 });

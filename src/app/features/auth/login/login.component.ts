@@ -51,7 +51,11 @@ export class LoginComponent {
   }
 }
 
+/** Vista de inicio tras iniciar sesión (la raíz `/` redirige al login, no sirve como destino). */
+const INICIO = '/estudiantes';
+
 /** Solo rutas internas, para no redirigir a otro sitio desde un enlace manipulado. */
 function safeReturnUrl(url: string | undefined): string {
-  return url && url.startsWith('/') && !url.startsWith('//') && !url.startsWith('/login') ? url : '/';
+  const interna = url && url.startsWith('/') && !url.startsWith('//') && !url.startsWith('/login');
+  return interna && url !== '/' ? url : INICIO;
 }

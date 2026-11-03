@@ -24,6 +24,20 @@ export class AuthService {
     return token !== null && !isExpired(token);
   });
 
+  /** Claim `rol` del JWT (`ADMIN` o `ESTUDIANTE`), o `null` sin sesión vigente. */
+  readonly rol = computed<Rol | null>(() => {
+    const token = this.tokenState();
+    if (token === null || !this.isAuthenticated()) return null;
+    const rol = decodePayload(token)?.['rol'];
+    return rol === 'ADMIN' || rol === 'ESTUDIANTE' ? rol : null;
+  });
+
+  /**
+   * Solo ADMIN crea, edita, elimina y sube archivos (igual que la política RBAC del Gateway).
+   * Un rol ausente o desconocido se trata como sin permisos de escritura.
+   */
+  readonly esAdmin = computed(() => this.rol() === 'ADMIN');
+
   /** Es la URL que el interceptor excluye al adjuntar el token y al manejar 401. */
   isLoginRequest(url: string): boolean {
     return url.startsWith(this.loginUrl);
@@ -45,15 +59,30 @@ export class AuthService {
   }
 }
 
-/** Lee `exp` del payload del JWT. La firma la valida el Gateway, no el cliente. */
-function isExpired(token: string): boolean {
+/** Roles que emite el módulo de Autenticación en el claim `rol`. */
+export type Rol = 'ADMIN' | 'ESTUDIANTE';
+
+/**
+ * Payload del JWT (base64url). Solo se lee para adaptar la interfaz: la firma la valida
+ * el Gateway, que es quien realmente aplica los permisos.
+ */
+function decodePayload(token: string): Record<string, unknown> | null {
   try {
     const segment = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-    const payload = JSON.parse(atob(segment.padEnd(Math.ceil(segment.length / 4) * 4, '=')));
-    return typeof payload.exp === 'number' && payload.exp * 1000 <= Date.now();
+    const json = atob(segment.padEnd(Math.ceil(segment.length / 4) * 4, '='));
+    // atob devuelve bytes: se decodifican como UTF-8 por si el payload trae tildes
+    const payload: unknown = JSON.parse(new TextDecoder().decode(Uint8Array.from(json, (c) => c.charCodeAt(0))));
+    return typeof payload === 'object' && payload !== null ? (payload as Record<string, unknown>) : null;
   } catch {
-    return true;
+    return null;
   }
+}
+
+/** Lee `exp` del payload del JWT. */
+function isExpired(token: string): boolean {
+  const payload = decodePayload(token);
+  if (payload === null) return true;
+  return typeof payload['exp'] === 'number' && payload['exp'] * 1000 <= Date.now();
 }
 
 function readStoredToken(): string | null {
