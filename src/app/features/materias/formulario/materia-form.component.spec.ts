@@ -10,11 +10,20 @@ const MATERIA: Materia = {
   programa: 'Ingeniería de Sistemas y Computación',
 };
 
+/** Catálogo de `GET /api/estudiantes/programas` (las opciones del selector). */
+const PROGRAMAS = [
+  { _id: 'p1', nombre: 'Ingeniería de Sistemas y Computación', codigo: 'ISC-01', facultad: 'Ingeniería' },
+  { _id: 'p2', nombre: 'Medicina', codigo: 'MED-01', facultad: 'Salud' },
+];
+
 async function render(url: string) {
   const h = await renderRoute(formRoutes('materias', MateriaFormComponent), url);
-  await h.flush(h.backend.expectOne('/api/estudiantes/programas'), []);
+  await h.flush(h.backend.expectOne('/api/estudiantes/programas'), PROGRAMAS);
   return h;
 }
+
+const opciones = (el: HTMLElement) =>
+  [...el.querySelectorAll<HTMLOptionElement>('#programa option')].map((o) => o.textContent?.trim());
 
 describe('MateriaFormComponent', () => {
   it('modo creación: envía creditos como número y la descripción vacía como null', async () => {
@@ -89,5 +98,38 @@ describe('MateriaFormComponent', () => {
       { status: 400, statusText: 'Bad Request' },
     );
     expect(h.el.querySelector('.form-error')?.textContent).toContain('creditos: Los créditos deben ser un número positivo');
+  });
+
+  it('el programa es un selector con los programas del catálogo y es obligatorio', async () => {
+    const h = await render('/materias/nuevo');
+    expect(h.el.querySelector('#programa')?.tagName).toBe('SELECT');
+    expect(opciones(h.el)).toEqual(['Selecciona un programa', 'Ingeniería de Sistemas y Computación', 'Medicina']);
+
+    h.type('#nombre', 'Ética');
+    h.type('#creditos', '2');
+    await h.submit();
+    expect(h.fieldError('programa')).toBe('Selecciona un programa.');
+    h.backend.expectNone('/api/materias');
+  });
+
+  it('al editar conserva y marca un programa antiguo que no está en el catálogo', async () => {
+    const h = await render('/materias/5/editar');
+    await h.flush(h.backend.expectOne('/api/materias/5'), { ...MATERIA, programa: 'Ingeniería Electrónica' });
+
+    expect(h.el.querySelector<HTMLSelectElement>('#programa')!.value).toBe('Ingeniería Electrónica');
+    expect(opciones(h.el)).toContain('Ingeniería Electrónica (valor actual, no está en el catálogo)');
+  });
+
+  it('si no cargan los programas lo explica y permite reintentar', async () => {
+    const h = await renderRoute(formRoutes('materias', MateriaFormComponent), '/materias/nuevo');
+    await h.flush(h.backend.expectOne('/api/estudiantes/programas'), null, { status: 502, statusText: 'Bad Gateway' });
+
+    const aviso = h.el.querySelector('#programa-carga')!;
+    expect(aviso.textContent).toContain('No se pudieron cargar los programas');
+    aviso.querySelector<HTMLButtonElement>('button')!.click();
+    await h.stable();
+    await h.flush(h.backend.expectOne('/api/estudiantes/programas'), PROGRAMAS);
+    expect(h.el.querySelector('#programa-carga')).toBeNull();
+    expect(opciones(h.el)).toContain('Medicina');
   });
 });

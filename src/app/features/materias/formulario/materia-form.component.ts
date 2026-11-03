@@ -1,9 +1,9 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { catchError, map, of, throwError } from 'rxjs';
+import { Subject, catchError, map, of, startWith, switchMap, throwError } from 'rxjs';
 
 import { entityForm } from '../../../core/forms/entity-form';
 import { ErrorMessages, fieldError, positiveInteger, requiredText } from '../../../core/forms/form-errors';
@@ -26,6 +26,7 @@ const MAX_PROGRAMA = 150;
 })
 export class MateriaFormComponent {
   private readonly materias = inject(MateriasService);
+  private readonly estudiantes = inject(EstudiantesService);
 
   /** `:id` de la ruta `materias/:id/editar`; vacío en `materias/nuevo`. */
   readonly id = input<string>();
@@ -61,22 +62,54 @@ export class MateriaFormComponent {
     notFoundMessage: (id) => `No hay una materia con el ID ${id}.`,
   });
 
-  /** Sugerencias para el campo Programa (en Materias es texto libre, no una referencia). */
-  protected readonly programas = toSignal(
-    inject(EstudiantesService)
-      .getProgramas()
-      .pipe(
-        map((list) => list.map((p) => p.nombre)),
-        catchError(() => of<string[]>([])),
+  /**
+   * Opciones del campo Programa: el catálogo del módulo Estudiantes. En Materias el programa es
+   * texto, así que el selector garantiza que solo se guarden nombres de programas existentes.
+   */
+  private readonly recargaProgramas$ = new Subject<void>();
+  private readonly programasCarga = toSignal(
+    this.recargaProgramas$.pipe(
+      startWith(undefined),
+      switchMap(() =>
+        this.estudiantes.getProgramas().pipe(
+          map((list) => ({ estado: 'listo' as const, nombres: list.map((p) => p.nombre) })),
+          catchError(() => of({ estado: 'error' as const, nombres: [] as string[] })),
+          startWith({ estado: 'cargando' as const, nombres: [] as string[] }),
+        ),
       ),
-    { initialValue: [] as string[] },
+    ),
+    { initialValue: { estado: 'cargando' as const, nombres: [] as string[] } },
   );
+  protected readonly programasEstado = computed(() => this.programasCarga().estado);
+
+  private readonly programaActual = toSignal(this.form.controls.programa.valueChanges, {
+    initialValue: this.form.controls.programa.value,
+  });
+  /**
+   * Al editar una materia antigua cuyo programa no está en el catálogo, se conserva como
+   * opción (marcada) para no perder el dato; al crear solo se ofrecen programas del catálogo.
+   */
+  protected readonly programaFueraDeCatalogo = computed(() => {
+    const actual = this.programaActual();
+    const { estado, nombres } = this.programasCarga();
+    return actual && estado === 'listo' && !nombres.includes(actual) ? actual : null;
+  });
+  protected readonly opcionesPrograma = computed(() => {
+    const { nombres } = this.programasCarga();
+    const actual = this.programaActual();
+    // Mientras carga (o si falló) el valor actual sigue visible y seleccionado
+    return actual && !nombres.includes(actual) ? [actual, ...nombres] : nombres;
+  });
+
+  protected recargarProgramas(): void {
+    this.recargaProgramas$.next();
+  }
 
   protected readonly maxDescripcion = MAX_DESCRIPCION;
   protected readonly messages: Record<string, ErrorMessages> = {
     nombre: { maxlength: `Máximo ${MAX_NOMBRE} caracteres.` },
     creditos: { pattern: 'Escribe un número entero positivo, por ejemplo 3.' },
-    programa: { maxlength: `Máximo ${MAX_PROGRAMA} caracteres.` },
+    programa: { required: 'Selecciona un programa.', maxlength: `Máximo ${MAX_PROGRAMA} caracteres.` },
     descripcion: { maxlength: `Máximo ${MAX_DESCRIPCION} caracteres.` },
   };
 

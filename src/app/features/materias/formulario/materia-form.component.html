@@ -27,14 +27,25 @@
         </div>
         <div class="field">
           <label for="programa">Programa</label>
-          <input id="programa" formControlName="programa" list="programas-sugeridos"
-            [attr.aria-invalid]="!!error('programa')" [attr.aria-describedby]="error('programa') ? 'programa-error' : null" />
-          <datalist id="programas-sugeridos">
-            @for (nombre of programas(); track nombre) {
-              <option [value]="nombre"></option>
+          <select id="programa" formControlName="programa"
+            [attr.aria-invalid]="!!error('programa')"
+            [attr.aria-describedby]="error('programa') ? 'programa-error' : programasEstado() === 'error' ? 'programa-carga' : null">
+            <option value="" disabled>
+              {{ programasEstado() === 'cargando' ? 'Cargando programas…' : 'Selecciona un programa' }}
+            </option>
+            @for (nombre of opcionesPrograma(); track nombre) {
+              <option [value]="nombre">
+                {{ nombre }}{{ nombre === programaFueraDeCatalogo() ? ' (valor actual, no está en el catálogo)' : '' }}
+              </option>
             }
-          </datalist>
+          </select>
           @if (error('programa'); as msg) { <p id="programa-error" class="field__error">{{ msg }}</p> }
+          @if (programasEstado() === 'error') {
+            <p id="programa-carga" class="field__error" role="alert">
+              No se pudieron cargar los programas del módulo Estudiantes.
+              <button type="button" class="link-button" (click)="recargarProgramas()">Reintentar</button>
+            </p>
+          }
         </div>
         <div class="field field--wide">
           <label for="descripcion">Descripción <span class="field__optional">(opcional)</span></label>
