@@ -1,4 +1,5 @@
 import type { Contacto } from './contacto.model';
+import type { EstadoInscripcion } from './inscripcion-resumen.model';
 
 /** Cuerpo de `POST /api/estudiantes` y `PUT /api/estudiantes/:id`. */
 export interface EstudiantePayload {
@@ -29,5 +30,5 @@ export interface InscripcionCreatePayload {
 
 /** Cuerpo de `PUT /api/inscripciones/:id`. */
 export interface InscripcionUpdatePayload extends InscripcionCreatePayload {
-  estado: string;
+  estado: EstadoInscripcion;
 }

@@ -54,7 +54,7 @@ export class EstudiantesService {
     return this.http.put(this.url(id), payload).pipe(map(() => undefined));
   }
 
-  /** El módulo no elimina en cascada: las inscripciones del estudiante se conservan. */
+  /** No borra: deja al estudiante INACTIVO; sus inscripciones se conservan. */
   deleteEstudiante(id: string): Observable<void> {
     return this.http.delete<void>(this.url(id));
   }

@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 
@@ -44,15 +44,20 @@ export class InscripcionesService {
     return this.http.get<InscripcionResumen>(this.url(id));
   }
 
-  createInscripcion(payload: InscripcionCreatePayload): Observable<InscripcionResumen> {
-    return this.http.post<InscripcionResumen>(this.baseUrl, payload);
+  /**
+   * `idempotencyKey` identifica el intento: si un reintento (tras fallo de red o 503) llega con
+   * la misma clave, el módulo devuelve la inscripción ya creada en vez de duplicarla.
+   */
+  createInscripcion(payload: InscripcionCreatePayload, idempotencyKey: string): Observable<InscripcionResumen> {
+    const headers = new HttpHeaders({ 'Idempotency-Key': idempotencyKey });
+    return this.http.post<InscripcionResumen>(this.baseUrl, payload, { headers });
   }
 
   updateInscripcion(id: string, payload: InscripcionUpdatePayload): Observable<InscripcionResumen> {
     return this.http.put<InscripcionResumen>(this.url(id), payload);
   }
 
-  /** El módulo también elimina las notas y el historial de la inscripción. */
+  /** No borra: deja la inscripción «cancelada» (conserva notas e historial) y libera el cupo. */
   deleteInscripcion(id: string): Observable<void> {
     return this.http.delete(this.url(id)).pipe(map(() => undefined));
   }

@@ -35,18 +35,19 @@
         @if (entity.editing()) {
           <div class="field">
             <label for="estado">Estado</label>
-            <input id="estado" formControlName="estado" list="estados-sugeridos" autocomplete="off"
-              [attr.aria-invalid]="!!error('estado')" [attr.aria-describedby]="error('estado') ? 'estado-error' : null" />
-            <datalist id="estados-sugeridos">
-              <option value="activa"></option>
-              <option value="cancelada"></option>
-            </datalist>
+            <select id="estado" formControlName="estado"
+              [attr.aria-invalid]="!!error('estado')" [attr.aria-describedby]="error('estado') ? 'estado-error' : null">
+              <option value="activa">activa</option>
+              <option value="cancelada">cancelada</option>
+            </select>
             @if (error('estado'); as msg) { <p id="estado-error" class="field__error">{{ msg }}</p> }
           </div>
         }
       </div>
 
-      @if (!entity.editing()) {
+      @if (entity.editing()) {
+        <p class="field__optional">El estudiante y el curso no se pueden cambiar. Para moverla a otro curso, cancélala y crea una nueva.</p>
+      } @else {
         <p class="field__optional">La inscripción se crea con estado «activa»; podrás cambiarlo al editarla.</p>
       }
 

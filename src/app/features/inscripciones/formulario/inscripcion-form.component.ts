@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, effect, inject, input, untracked } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { Observable, tap } from 'rxjs';
 
 import { entityForm } from '../../../core/forms/entity-form';
 import {
@@ -8,10 +10,11 @@ import {
   OBJECT_ID_PATTERN,
   fieldError,
   positiveInteger,
-  requiredText,
 } from '../../../core/forms/form-errors';
+import { isRetryableError } from '../../../core/http/gateway-error';
+import { newIdempotencyKey } from '../../../core/http/idempotency-key';
 import { InscripcionesService } from '../../../core/services/inscripciones.service';
-import { InscripcionCreatePayload, InscripcionResumen, InscripcionUpdatePayload } from '../../../models';
+import { EstadoInscripcion, InscripcionCreatePayload, InscripcionResumen, InscripcionUpdatePayload } from '../../../models';
 import { ErrorStateComponent } from '../../../shared/ui/error-state.component';
 import { LoadingStateComponent } from '../../../shared/ui/loading-state.component';
 
@@ -41,7 +44,7 @@ export class InscripcionFormComponent {
       validators: [Validators.required, Validators.pattern(PERIODO_PATTERN)],
     }),
     // Solo editable al actualizar: el módulo no acepta `estado` al crear.
-    estado: new FormControl('', { nonNullable: true, validators: [Validators.required, requiredText] }),
+    estado: new FormControl<EstadoInscripcion>('activa', { nonNullable: true, validators: Validators.required }),
   });
 
   protected readonly entity = entityForm<InscripcionResumen>({
@@ -58,11 +61,33 @@ export class InscripcionFormComponent {
     periodo: { pattern: 'Usa el formato AAAA-1 o AAAA-2, por ejemplo 2026-2.' },
   };
 
+  /**
+   * Clave del intento de creación en curso. Se conserva entre reintentos tras un fallo de red
+   * o 503 (el módulo pudo haber creado la inscripción) y se descarta tras un éxito, otro error
+   * o cualquier cambio en el formulario, porque entonces es un intento distinto.
+   */
+  private idempotencyKey: string | null = null;
+
   constructor() {
     effect(() => {
-      const estado = this.form.controls.estado;
-      untracked(() => (this.entity.editing() ? estado.enable() : estado.disable()));
+      const { estudianteId, cursoId, estado } = this.form.controls;
+      const editing = this.entity.editing();
+      untracked(() => {
+        // Al editar solo cambian periodo y estado: el módulo responde CambioNoPermitido si
+        // se intenta mover la inscripción a otro estudiante o curso.
+        if (editing) {
+          estudianteId.disable();
+          cursoId.disable();
+          estado.enable();
+        } else {
+          estudianteId.enable();
+          cursoId.enable();
+          estado.disable();
+        }
+      });
     });
+
+    this.form.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => (this.idempotencyKey = null));
   }
 
   protected error(control: keyof typeof this.form.controls): string | null {
@@ -75,20 +100,30 @@ export class InscripcionFormComponent {
   }
 
   protected updatePayload(): InscripcionUpdatePayload {
-    return { ...this.createPayload(), estado: this.form.getRawValue().estado.trim() };
+    return { ...this.createPayload(), estado: this.form.getRawValue().estado };
   }
 
   protected submit(): void {
-    if (!this.entity.validate()) return;
+    if (this.entity.saving() || !this.entity.validate()) return;
     const id = this.id();
     this.entity.save(
-      id
-        ? this.inscripciones.updateInscripcion(id, this.updatePayload())
-        : this.inscripciones.createInscripcion(this.createPayload()),
+      id ? this.inscripciones.updateInscripcion(id, this.updatePayload()) : this.create(),
       {
         successMessage: id ? 'Se guardaron los cambios de la inscripción.' : 'Se creó la inscripción.',
         redirectTo: '/inscripciones',
       },
+    );
+  }
+
+  private create(): Observable<InscripcionResumen> {
+    const key = (this.idempotencyKey ??= newIdempotencyKey());
+    return this.inscripciones.createInscripcion(this.createPayload(), key).pipe(
+      tap({
+        next: () => (this.idempotencyKey = null),
+        error: (error: unknown) => {
+          if (!isRetryableError(error)) this.idempotencyKey = null;
+        },
+      }),
     );
   }
 }

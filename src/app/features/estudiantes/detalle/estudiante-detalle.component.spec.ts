@@ -24,6 +24,7 @@ const DETALLE_README: EstudianteDetalle = {
     fecha_nacimiento: '2003-05-20T00:00:00.000Z',
     programa: { _id: '60d5ec49f1b2c8b1f8e4e1a1', nombre: 'Ingeniería de Sistemas y Computación', codigo: 'ISC-01', facultad: 'Facultad de Ingeniería' },
     contacto: { telefono: '3001234567', direccion: 'Calle 10 #5-30', ciudad: 'Sogamoso' },
+    estado: 'ACTIVO',
   },
   inscripciones: [
     {
@@ -40,6 +41,7 @@ const DETALLE_README: EstudianteDetalle = {
         horario: 'Lunes y Miércoles 14:00-16:00',
         periodo: '2026-2',
         cupo: 30,
+        cupoDisponible: 12,
         aula: 'Laboratorio 204',
         modalidad: 'PRESENCIAL',
         estado: 'ACTIVO',
@@ -135,8 +137,8 @@ describe('EstudianteDetalleComponent', () => {
 
 afterEach(() => cerrarSesion());
 
-describe('EstudianteDetalleComponent: eliminar', () => {
-  it('confirma avisando que las inscripciones se conservan, elimina y vuelve al listado', async () => {
+describe('EstudianteDetalleComponent: desactivar', () => {
+  it('confirma avisando que las inscripciones se conservan, desactiva y vuelve al listado', async () => {
     const { fixture, backend, el } = await render('ADMIN');
     backend.expectOne(URL).flush(DETALLE_README);
     await fixture.whenStable();
@@ -144,8 +146,11 @@ describe('EstudianteDetalleComponent: eliminar', () => {
     const confirm = TestBed.inject(ConfirmService);
 
     el.querySelector<HTMLButtonElement>('.profile__delete')!.click();
-    expect(confirm.pending()?.title).toBe('¿Eliminar a Laura Gómez?');
-    expect(confirm.pending()?.message).toContain('Sus inscripciones no se eliminan');
+    expect(el.querySelector('.profile__delete')?.textContent?.trim()).toBe('Desactivar');
+    expect(confirm.pending()?.title).toBe('¿Desactivar a Laura Gómez?');
+    expect(confirm.pending()?.message).toContain('INACTIVO');
+    expect(confirm.pending()?.message).toContain('sus inscripciones se conservan');
+    expect(confirm.pending()?.confirmLabel).toBe('Desactivar estudiante');
     confirm.settle(true);
     await fixture.whenStable();
 
@@ -155,7 +160,28 @@ describe('EstudianteDetalleComponent: eliminar', () => {
     await fixture.whenStable();
 
     expect(navigate).toHaveBeenCalledWith('/estudiantes');
-    expect(TestBed.inject(NotificationService).toasts()[0].title).toBe('Se eliminó a Laura Gómez.');
+    expect(TestBed.inject(NotificationService).toasts()[0].title).toBe('Se desactivó a Laura Gómez.');
+  });
+
+  it('muestra el estado del estudiante y, si está INACTIVO, oculta Desactivar pero deja Editar', async () => {
+    const { fixture, backend, el } = await render('ADMIN');
+    backend.expectOne(URL).flush({ ...DETALLE_README, estudiante: { ...DETALLE_README.estudiante, estado: 'INACTIVO' } });
+    await fixture.whenStable();
+
+    expect(el.querySelector('.profile__title .status')?.textContent?.trim()).toBe('INACTIVO');
+    expect(el.querySelector('.profile__delete')).toBeNull();
+    expect(el.querySelector('.profile__actions')?.textContent).toContain('Editar');
+  });
+
+  it('muestra el estado de la inscripción, el del curso y sus cupos disponibles', async () => {
+    const { fixture, backend, el } = await render('ADMIN');
+    backend.expectOne(URL).flush(DETALLE_README);
+    await fixture.whenStable();
+
+    const tarjeta = el.querySelector('.enrollment')!;
+    expect(tarjeta.querySelector('.enrollment__header .status')?.textContent?.trim()).toBe('activa');
+    expect(tarjeta.textContent).toContain('ACTIVO');
+    expect(tarjeta.textContent).toContain('12 de 30');
   });
 });
 

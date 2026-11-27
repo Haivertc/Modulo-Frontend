@@ -63,7 +63,7 @@ export class EstudianteDetalleComponent {
 
   protected readonly deletion = deleteAction();
 
-  /** Solo ADMIN ve Editar, Eliminar y la subida de foto (el Gateway rechaza la escritura con 403). */
+  /** Solo ADMIN ve Editar, Desactivar y la subida de foto (el Gateway rechaza la escritura con 403). */
   protected readonly esAdmin = inject(AuthService).esAdmin;
   private readonly notifications = inject(NotificationService);
 
@@ -87,18 +87,19 @@ export class EstudianteDetalleComponent {
     this.reload$.next();
   }
 
-  protected eliminar(estudiante: Estudiante): void {
+  /** El DELETE no borra: deja al estudiante INACTIVO. */
+  protected desactivar(estudiante: Estudiante): void {
     const nombre = `${estudiante.nombre} ${estudiante.apellido}`;
     void this.deletion.run({
       key: estudiante._id,
       confirm: {
-        title: `¿Eliminar a ${nombre}?`,
+        title: `¿Desactivar a ${nombre}?`,
         message:
-          'Se eliminará su perfil. Sus inscripciones no se eliminan: quedarán registradas con el ID de este estudiante. Esta acción no se puede deshacer.',
-        confirmLabel: 'Eliminar estudiante',
+          'Quedará en estado INACTIVO y no podrá inscribirse en nuevos cursos. Su perfil y sus inscripciones se conservan.',
+        confirmLabel: 'Desactivar estudiante',
       },
       request: () => this.estudiantes.deleteEstudiante(estudiante._id),
-      successMessage: `Se eliminó a ${nombre}.`,
+      successMessage: `Se desactivó a ${nombre}.`,
       onSuccess: () => void this.router.navigateByUrl('/estudiantes'),
     });
   }

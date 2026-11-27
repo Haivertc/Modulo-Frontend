@@ -4,6 +4,8 @@ import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 
+import { ConfirmService } from '../../../core/feedback/confirm.service';
+import { NotificationService } from '../../../core/feedback/notification.service';
 import { InscripcionesPageResponse } from '../../../models';
 import { cerrarSesion, iniciarSesionComo } from '../../../../testing/session';
 import { InscripcionesListComponent } from './inscripciones-list.component';
@@ -71,6 +73,8 @@ describe('InscripcionesListComponent', () => {
     expect(filas[0].textContent).toContain('Parcial 1 4.2');
     expect(filas[0].querySelector('a')?.getAttribute('href')).toBe('/estudiantes/6501f8a2c9d4e5f6a7b8c9d0');
     expect(filas[1].textContent).toContain('Sin notas');
+    expect(filas[0].querySelector('.status')?.textContent?.trim()).toBe('activa');
+    expect(filas[1].querySelector('.status--off')?.textContent?.trim()).toBe('cancelada');
   });
 
   it('el filtro de periodo se sincroniza con la URL', async () => {
@@ -111,13 +115,38 @@ describe('InscripcionesListComponent: roles', () => {
     expect(el.querySelectorAll('thead th').length).toBe(5);
   });
 
-  it('ADMIN ve Nueva, Editar y Eliminar', async () => {
+  it('ADMIN ve Nueva y Editar, y Cancelar inscripción solo en las activas', async () => {
     iniciarSesionComo('ADMIN');
     const { el, flushList } = await setup('/inscripciones');
     await flushList();
 
     expect(el.textContent).toContain('Nueva inscripción');
     expect(el.querySelectorAll('a[href*="editar"]').length).toBe(2);
-    expect(el.querySelectorAll('.link-button--danger').length).toBe(2);
+    const cancelar = el.querySelectorAll('.link-button--danger');
+    expect(cancelar.length).toBe(1);
+    expect(cancelar[0].textContent).toContain('Cancelar inscripción');
+    expect(el.textContent).not.toContain('Eliminar');
+  });
+
+  it('cancelar pide confirmación, envía DELETE y avisa que se liberó el cupo', async () => {
+    iniciarSesionComo('ADMIN');
+    const { el, flushList, stable } = await setup('/inscripciones');
+    await flushList();
+    const confirm = TestBed.inject(ConfirmService);
+
+    el.querySelector<HTMLButtonElement>('.link-button--danger')!.click();
+    expect(confirm.pending()?.title).toBe('¿Cancelar la inscripción al curso 1 (2026-2)?');
+    expect(confirm.pending()?.message).toContain('se liberará su cupo');
+    expect(confirm.pending()?.confirmLabel).toBe('Cancelar inscripción');
+    confirm.settle(true);
+    await stable();
+
+    const backend = TestBed.inject(HttpTestingController);
+    const req = backend.expectOne('/api/inscripciones/6501f8a2c9d4e5f6a7b8c9d1');
+    expect(req.request.method).toBe('DELETE');
+    req.flush({ ...PAGINA.data[0], estado: 'cancelada' });
+    await stable();
+    expect(TestBed.inject(NotificationService).toasts()[0].title).toBe('Se canceló la inscripción y se liberó el cupo.');
+    await flushList();
   });
 });

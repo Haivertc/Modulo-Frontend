@@ -54,16 +54,17 @@ export class InscripcionesListComponent {
     syncFilterForm(this.filtros, this.list);
   }
 
-  protected eliminar(inscripcion: InscripcionResumen): void {
+  /** El DELETE no borra: deja la inscripción «cancelada» y libera el cupo del curso. */
+  protected cancelar(inscripcion: InscripcionResumen): void {
     void this.deletion.run({
       key: inscripcion._id,
       confirm: {
-        title: `¿Eliminar la inscripción al curso ${inscripcion.cursoId} (${inscripcion.periodo})?`,
-        message: 'También se eliminarán sus notas y su historial de estados. Esta acción no se puede deshacer.',
-        confirmLabel: 'Eliminar inscripción',
+        title: `¿Cancelar la inscripción al curso ${inscripcion.cursoId} (${inscripcion.periodo})?`,
+        message: 'Quedará en estado «cancelada» y se liberará su cupo en el curso. Sus notas y su historial se conservan.',
+        confirmLabel: 'Cancelar inscripción',
       },
       request: () => this.inscripciones.deleteInscripcion(inscripcion._id),
-      successMessage: 'Se eliminó la inscripción.',
+      successMessage: 'Se canceló la inscripción y se liberó el cupo.',
       onSuccess: () => this.list.reload(),
     });
   }
