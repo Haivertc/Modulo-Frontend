@@ -11,6 +11,9 @@ export interface Fotografia {
   url: string;
 }
 
+/** Un DELETE no borra al estudiante: lo deja INACTIVO. */
+export type EstadoEstudiante = 'ACTIVO' | 'INACTIVO';
+
 /** Estudiante (módulo Estudiantes). */
 export interface Estudiante {
   _id: string;
@@ -21,6 +24,7 @@ export interface Estudiante {
   fecha_nacimiento: string;
   programa: Programa;
   contacto: Contacto;
+  estado: EstadoEstudiante;
   /** Ausente si el estudiante aún no tiene fotografía. */
   fotografia?: Fotografia;
 }

@@ -1,5 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 
+import { ErrorType } from '../../models';
+
 export interface GatewayErrorView {
   status: number;
   title: string;
@@ -13,6 +15,52 @@ const MODULO_POR_PUERTO: Record<string, string> = {
   '3003': 'Inscripciones',
 };
 
+const SERVICIO_NO_DISPONIBLE = 'Un módulo no está disponible, intenta de nuevo en unos segundos';
+
+/** Mensajes por `errorType` (409, 422 y 503); van antes que la lectura por código HTTP. */
+const MENSAJES_POR_TIPO: Partial<Record<ErrorType, { title: string; message: string }>> = {
+  CupoAgotado: {
+    title: 'El curso no tiene cupos disponibles',
+    message: 'Elige otro curso o espera a que se libere un cupo.',
+  },
+  InscripcionDuplicada: {
+    title: 'El estudiante ya está inscrito en este curso',
+    message: 'Revisa el listado de inscripciones; no hace falta crearla de nuevo.',
+  },
+  EstudianteNoExiste: {
+    title: 'El estudiante no existe o está inactivo',
+    message: 'Verifica el ID del estudiante y que su estado sea ACTIVO.',
+  },
+  EstudianteInactivo: {
+    title: 'El estudiante no existe o está inactivo',
+    message: 'Verifica el ID del estudiante y que su estado sea ACTIVO.',
+  },
+  CursoNoExiste: {
+    title: 'El curso no existe o está inactivo',
+    message: 'Verifica el ID del curso y que su estado sea ACTIVO.',
+  },
+  CursoInactivo: {
+    title: 'El curso no existe o está inactivo',
+    message: 'Verifica el ID del curso y que su estado sea ACTIVO.',
+  },
+  CambioNoPermitido: {
+    title: 'Ese cambio no está permitido',
+    message: 'El estudiante y el curso de una inscripción no se pueden cambiar. Cancélala y crea una nueva.',
+  },
+  ServicioNoDisponible: {
+    title: SERVICIO_NO_DISPONIBLE,
+    message: 'La operación no se completó. Vuelve a intentarla.',
+  },
+};
+
+/**
+ * Fallos tras los que la petición pudo o no haberse procesado y conviene reintentar con la
+ * misma `Idempotency-Key`: sin respuesta (red), 503 del módulo o 504 por tiempo de espera.
+ */
+export function isRetryableError(error: unknown): boolean {
+  return error instanceof HttpErrorResponse && (error.status === 0 || error.status === 503 || error.status === 504);
+}
+
 /** Traduce un error del Gateway a un mensaje que explica qué pasó y qué hacer. */
 export function describeGatewayError(error: unknown, notFoundMessage: string): GatewayErrorView {
   if (!(error instanceof HttpErrorResponse)) {
@@ -21,6 +69,12 @@ export function describeGatewayError(error: unknown, notFoundMessage: string): G
 
   const gatewayMessage = readGatewayMessage(error);
   const { status } = error;
+
+  const errorType = readErrorType(error);
+  const porTipo = errorType ? MENSAJES_POR_TIPO[errorType as ErrorType] : undefined;
+  if (porTipo) {
+    return { status, ...porTipo };
+  }
 
   if (status === 404) {
     return { status, title: 'No encontramos el registro', message: notFoundMessage };
@@ -46,6 +100,13 @@ export function describeGatewayError(error: unknown, notFoundMessage: string): G
       status,
       title: 'El archivo es demasiado grande',
       message: gatewayMessage ?? 'Elige un archivo más liviano e intenta de nuevo.',
+    };
+  }
+  if (status === 503) {
+    return {
+      status,
+      title: SERVICIO_NO_DISPONIBLE,
+      message: 'La operación no se completó. Vuelve a intentarla.',
     };
   }
   if (status === 502) {
@@ -85,6 +146,14 @@ function readGatewayMessage(error: HttpErrorResponse): string | undefined {
     if (typeof value === 'string' && value.trim()) return value;
   }
   return undefined;
+}
+
+/** `errorType` del cuerpo `{ message, errorType }`, si viene. */
+function readErrorType(error: HttpErrorResponse): string | undefined {
+  const body: unknown = error.error;
+  if (typeof body !== 'object' || body === null) return undefined;
+  const value: unknown = (body as Record<string, unknown>)['errorType'];
+  return typeof value === 'string' && value ? value : undefined;
 }
 
 /**

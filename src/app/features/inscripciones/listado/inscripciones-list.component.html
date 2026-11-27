@@ -62,7 +62,7 @@
             @for (i of p.items; track i._id) {
               <tr>
                 <td data-label="Periodo">{{ i.periodo }}</td>
-                <td data-label="Estado">{{ i.estado }}</td>
+                <td data-label="Estado"><span class="status" [class.status--off]="i.estado !== 'activa'">{{ i.estado }}</span></td>
                 <td data-label="Estudiante" class="table__wrap-anywhere">
                   <a [routerLink]="['/estudiantes', i.estudianteId]">{{ i.estudianteId }}</a>
                 </td>
@@ -79,10 +79,12 @@
                     <a [routerLink]="['/inscripciones', i._id, 'editar']">
                       Editar<span class="visually-hidden"> inscripción del periodo {{ i.periodo }} al curso {{ i.cursoId }}</span>
                     </a>
-                    <button type="button" class="link-button link-button--danger"
-                      [disabled]="deletion.deleting() === i._id" (click)="eliminar(i)">
-                      Eliminar<span class="visually-hidden"> inscripción del periodo {{ i.periodo }} al curso {{ i.cursoId }}</span>
-                    </button>
+                    @if (i.estado !== 'cancelada') {
+                      <button type="button" class="link-button link-button--danger"
+                        [disabled]="deletion.deleting() === i._id" (click)="cancelar(i)">
+                        Cancelar inscripción<span class="visually-hidden"> del periodo {{ i.periodo }} al curso {{ i.cursoId }}</span>
+                      </button>
+                    }
                   </td>
                 }
               </tr>

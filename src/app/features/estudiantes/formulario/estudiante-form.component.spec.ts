@@ -16,6 +16,7 @@ const LAURA: Estudiante = {
   fecha_nacimiento: '2003-05-20T00:00:00.000Z',
   programa: PROGRAMAS[0],
   contacto: { telefono: '3001234567', direccion: 'Calle 10 #5-30', ciudad: 'Sogamoso' },
+  estado: 'ACTIVO',
 };
 
 async function render(url: string) {

@@ -27,6 +27,7 @@ function pagina(pageNumber: number, totalRecords = 45, pageSize = 20): Estudiant
       fecha_nacimiento: '2003-05-20T00:00:00.000Z',
       programa: { _id: 'p1', nombre: 'Ingeniería de Sistemas', codigo: 'ISC-01', facultad: 'Ingeniería' },
       contacto: { telefono: '3001234567', direccion: 'Calle 10', ciudad: 'Sogamoso' },
+      estado: i === 1 ? ('INACTIVO' as const) : ('ACTIVO' as const),
     })),
   };
 }
@@ -86,6 +87,16 @@ describe('EstudiantesListComponent', () => {
     expect(el.querySelector<HTMLInputElement>('#f-ciudad')!.value).toBe('Tunja');
     expect(el.querySelectorAll('tbody tr').length).toBe(10);
     expect(el.querySelector('th[aria-sort="descending"]')?.textContent).toContain('Apellido');
+  });
+
+  it('muestra el estado de cada estudiante y atenúa los INACTIVO', async () => {
+    const { el, flushList } = await setup('/estudiantes');
+    await flushList(pagina(1));
+
+    const [activo, inactivo] = el.querySelectorAll('tbody tr');
+    expect(activo.querySelector('td[data-label="Estado"]')?.textContent?.trim()).toBe('ACTIVO');
+    expect(activo.querySelector('.status--off')).toBeNull();
+    expect(inactivo.querySelector('td[data-label="Estado"] .status--off')?.textContent?.trim()).toBe('INACTIVO');
   });
 
   it('al filtrar actualiza la URL, vuelve a la página 1 y pide con el nuevo filtro', async () => {

@@ -62,6 +62,7 @@
               <th appSortHeader [direction]="list.direction('correo')" (sort)="list.sort('correo')">Correo</th>
               <th scope="col" class="is-static">Programa</th>
               <th appSortHeader [direction]="list.direction('contacto.ciudad')" (sort)="list.sort('contacto.ciudad')">Ciudad</th>
+              <th scope="col" class="is-static">Estado</th>
               <th scope="col" class="is-static"><span class="visually-hidden">Acciones</span></th>
             </tr>
           </thead>
@@ -92,6 +93,7 @@
                 <td data-label="Correo" class="table__wrap-anywhere">{{ e.correo }}</td>
                 <td data-label="Programa">{{ e.programa.nombre }}</td>
                 <td data-label="Ciudad">{{ e.contacto.ciudad }}</td>
+                <td data-label="Estado"><span class="status" [class.status--off]="e.estado !== 'ACTIVO'">{{ e.estado }}</span></td>
                 <td class="table__action">
                   <a [routerLink]="['/estudiantes', e._id]">
                     Ver detalle<span class="visually-hidden"> de {{ e.nombre }} {{ e.apellido }}</span>

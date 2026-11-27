@@ -72,6 +72,18 @@ describe('Adaptadores de paginación', () => {
     expect(page).toEqual({ items: [{ _id: 'i' }], totalElements: 101, pageNumber: 3, pageSize: 50, totalPages: 3 });
   });
 
+  it('Inscripciones: createInscripcion envía la clave en el encabezado Idempotency-Key', () => {
+    const { backend } = setup();
+    const payload = { estudianteId: 'abc', cursoId: '1', periodo: '2026-2' };
+    TestBed.inject(InscripcionesService).createInscripcion(payload, 'clave-123').subscribe();
+
+    const req = backend.expectOne('/api/inscripciones');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.headers.get('Idempotency-Key')).toBe('clave-123');
+    expect(req.request.body).toEqual(payload);
+    req.flush({});
+  });
+
   it('Estudiantes: consulta los programas en /api/estudiantes/programas', () => {
     const { backend } = setup();
     TestBed.inject(EstudiantesService).getProgramas().subscribe();

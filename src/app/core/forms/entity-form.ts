@@ -82,7 +82,9 @@ export function entityForm<T>(config: EntityFormConfig<T>) {
       return false;
     },
 
+    /** Ignora la llamada si ya hay un envío en curso (doble clic o Enter repetido). */
     save(request: Observable<unknown>, options: SaveOptions): void {
+      if (saving()) return;
       saving.set(true);
       saveError.set(null);
       request.subscribe({

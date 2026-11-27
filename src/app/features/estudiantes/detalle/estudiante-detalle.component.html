@@ -29,14 +29,19 @@
       <!-- Columna de la información textual -->
       <div class="profile__body">
         <div class="profile__header">
-          <h1 id="estudiante-nombre" class="profile__name">{{ d.estudiante.nombre }} {{ d.estudiante.apellido }}</h1>
+          <div class="profile__title">
+            <h1 id="estudiante-nombre" class="profile__name">{{ d.estudiante.nombre }} {{ d.estudiante.apellido }}</h1>
+            <span class="status" [class.status--off]="d.estudiante.estado !== 'ACTIVO'">{{ d.estudiante.estado }}</span>
+          </div>
           @if (esAdmin()) {
             <div class="profile__actions">
               <a class="button button--secondary" [routerLink]="['/estudiantes', d.estudiante._id, 'editar']">Editar</a>
-              <button type="button" class="button button--secondary profile__delete"
-                [disabled]="deletion.deleting() !== null" (click)="eliminar(d.estudiante)">
-                {{ deletion.deleting() ? 'Eliminando…' : 'Eliminar' }}
-              </button>
+              @if (d.estudiante.estado === 'ACTIVO') {
+                <button type="button" class="button button--secondary profile__delete"
+                  [disabled]="deletion.deleting() !== null" (click)="desactivar(d.estudiante)">
+                  {{ deletion.deleting() ? 'Desactivando…' : 'Desactivar' }}
+                </button>
+              }
             </div>
           }
         </div>
@@ -102,7 +107,7 @@
             <li class="enrollment">
               <div class="enrollment__header">
                 <h3 class="enrollment__course">{{ ins.curso.materiaNombre }}</h3>
-                <span class="enrollment__state">{{ ins.estado }}</span>
+                <span class="status" [class.status--off]="ins.estado !== 'activa'">{{ ins.estado }}</span>
               </div>
 
               <dl class="facts">
@@ -113,6 +118,16 @@
                 <div>
                   <dt>Docente</dt>
                   <dd>{{ ins.curso.docente.nombres }} {{ ins.curso.docente.apellidos }}</dd>
+                </div>
+                <div>
+                  <dt>Curso</dt>
+                  <dd>
+                    <span class="status" [class.status--off]="ins.curso.estado !== 'ACTIVO'">{{ ins.curso.estado }}</span>
+                  </dd>
+                </div>
+                <div>
+                  <dt>Cupos disponibles</dt>
+                  <dd>{{ ins.curso.cupoDisponible }} de {{ ins.curso.cupo }}</dd>
                 </div>
               </dl>
 
